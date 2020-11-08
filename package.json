@@ -1,0 +1,21 @@
+{
+  "name": "b9lab_ethsub-project2-remittance",
+  "version": "0.1.0",
+  "description": "Small project and assisted by https://academy.b9lab.com",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Niels Launert",
+  "email": "niels@blockwerft.de",
+  "license": "Unlicense",
+  "dependencies": {
+    "@openzeppelin/contracts": "^3.2.0"
+  },
+  "devDependencies": {
+    "truffle-assertions": "^0.9.2"
+  }
+}
