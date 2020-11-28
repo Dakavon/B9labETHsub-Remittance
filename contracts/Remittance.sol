@@ -3,7 +3,7 @@
 //B9lab ETH-SUB Ethereum Developer Subscription Course
 //>>> Remittance <<<
 //
-//Last update: 08.11.2020
+//Last update: 28.11.2020
 
 pragma solidity 0.6.12;
 
@@ -18,7 +18,11 @@ contract Remittance is Stoppable{
     using SafeMath for uint;
 
     //Max block duration after funds can be reclaimed by origin
-    uint public maxDurationBlocks = 1000;
+    uint public maxDurationBlocks;
+
+    //Contract fee that is taken from the deposited funds
+    uint public contractCollectedFees;
+    uint public contractFeePercentage;
 
     struct RemittanceStruct{
         address origin;
@@ -27,13 +31,22 @@ contract Remittance is Stoppable{
     }
     mapping(bytes32 => RemittanceStruct) public remittanceStructs;
 
-    event LogFundsDeposited(address indexed origin, uint amount, uint deadline);
-    event LogFundsWithdrawn(address indexed receiver, uint amount);
-    event LogFundsReclaimed(address indexed origin, uint amount);
+    event LogFundsDeposited(bytes32 hashedPassword, address indexed origin, uint amount, uint deadline, uint fee);
+    event LogFundsWithdrawn(bytes32 hashedPassword, address indexed receiver, uint amount);
+    event LogFundsReclaimed(bytes32 hashedPassword, address indexed origin, uint amount);
     event LogMaxDurationChanged(address indexed sender, uint oldMaxDurationBlocks, uint newMaxDurationBlocks);
+    event LogContractFeePercentageChanged(address indexed sender, uint oldContractFeePercentage, uint newContractFeePercentage);
+    event LogFeesWithdrawn(address indexed sender, uint amount);
 
-    constructor(State initialState)
-        Stoppable(initialState) public { }
+    constructor(State initialState, uint _maxDurationBlocks, uint _contractFeePercentage)
+        Stoppable(initialState) public {
+            require(_maxDurationBlocks > 0, "maxDurationBlocks needs to be greater than 0");
+            require(0 <= _contractFeePercentage && _contractFeePercentage <= 50,
+                "contractFeePercentage must be a value between 0 (lower bound) and 50 (upper bound)");
+
+            maxDurationBlocks = _maxDurationBlocks;
+            contractFeePercentage = _contractFeePercentage;
+        }
 
     /**
      * @dev Support function: Create a unique hashed password off-chain to be used for depositFunds() and reclaimFunds()
@@ -42,6 +55,9 @@ contract Remittance is Stoppable{
      * @param clearPassword The uncrypted, plain password
      */
     function createHashedPassword(address exchange, bytes32 clearPassword) public view returns(bytes32 hashedPassword){
+        require(exchange != address(0x0), "exchange address must be provided");
+        require(clearPassword != "", "clearPassword must be provided");
+
         return keccak256(abi.encodePacked(exchange, clearPassword, address(this)));
     }
 
@@ -51,11 +67,28 @@ contract Remittance is Stoppable{
      * @param newMaxDurationBlocks New maximum duration in blocks for new remittanceses
      */
     function changeMaxDurationBlocks(uint newMaxDurationBlocks) public onlyOwner returns(bool success){
-        require(newMaxDurationBlocks > 0, "'newMaxDurationBlocks' need to be greater than 0");
+        require(newMaxDurationBlocks > 0, "newMaxDurationBlocks needs to be greater than 0");
 
-        emit LogMaxDurationChanged(msg.sender, maxDurationBlocks, newMaxDurationBlocks);
+        uint oldMaxDurationBlocks = maxDurationBlocks;
         maxDurationBlocks = newMaxDurationBlocks;
 
+        emit LogMaxDurationChanged(msg.sender, oldMaxDurationBlocks, newMaxDurationBlocks);
+        return true;
+    }
+
+    /**
+     * @dev Change the contract fee percentage that takes a share of the deposits for this contact
+     *
+     * @param newContractFeePercentage The new fee percentage of this contract is given in '%', therefore between 0 (lower bound) and 100 (upper bound)
+     */
+    function changeContractFeePercentage(uint newContractFeePercentage) public onlyOwner returns(bool success){
+        require(0 <= newContractFeePercentage && newContractFeePercentage <= 50,
+            "newContractFeePercentage must be a value between 0 (lower bound) and 50 (upper bound)");
+
+        uint oldContractFeePercentage = contractFeePercentage;
+        contractFeePercentage = newContractFeePercentage;
+
+        emit LogContractFeePercentageChanged(msg.sender, oldContractFeePercentage, newContractFeePercentage);
         return true;
     }
 
@@ -67,29 +100,33 @@ contract Remittance is Stoppable{
      */
     function depositFunds(bytes32 hashedPassword, uint durationBlocks) public payable onlyIfRunning returns(bool success){
         require(msg.value > 0, "Nothing to deposit");
-        require(hashedPassword != "", "'hashedPassword' must be provided");
-        require(durationBlocks > 0 && durationBlocks <= maxDurationBlocks, "'durationBlocks' must be greater than 0 and less or equal than 'maxDurationBlocks'");
+        require(hashedPassword != "", "hashedPassword must be provided");
+        require(durationBlocks > 0 && durationBlocks <= maxDurationBlocks, "durationBlocks must be greater than 0 and less or equal than maxDurationBlocks");
 
         //Check for address, i.e. same exchange address and password configuration must never have been used before within this contract
         require(remittanceStructs[hashedPassword].origin == address(0x0), "Remittance must be unique");
 
-        uint deadline = block.number + durationBlocks;
+        uint fee = msg.value.mul(contractFeePercentage).div(100);
+        uint amount = msg.value.sub(fee);
+
+        uint deadline = block.number.add(durationBlocks);
 
         remittanceStructs[hashedPassword].origin = msg.sender;
-        remittanceStructs[hashedPassword].amount = msg.value;
+        remittanceStructs[hashedPassword].amount = amount;
         remittanceStructs[hashedPassword].deadline = deadline;
+        contractCollectedFees = contractCollectedFees.add(fee);
 
-        LogFundsDeposited(msg.sender, msg.value, deadline);
+        emit LogFundsDeposited(hashedPassword, msg.sender, amount, deadline, fee);
         return true;
     }
 
     /**
-     * @dev Retrieve remittance with the correct password (only by receiver specified in createHashedPassword()
+     * @dev Retrieve remittance with the correct password (only by receiver specified in createHashedPassword())
      *
      * @param clearPassword Clear password that was kept secret
      */
     function withdrawFunds(bytes32 clearPassword) public onlyIfRunning returns(bool success){
-        require(clearPassword != "", "'clearPassword' must be provided");
+        require(clearPassword != "", "clearPassword must be provided");
 
         bytes32 hashedPassword = createHashedPassword(msg.sender, clearPassword);
 
@@ -97,7 +134,8 @@ contract Remittance is Stoppable{
         require(amount > 0, "No value to retrieve");
 
         remittanceStructs[hashedPassword].amount = 0;
-        emit LogFundsWithdrawn(msg.sender, amount);
+        remittanceStructs[hashedPassword].deadline = 0;
+        emit LogFundsWithdrawn(hashedPassword, msg.sender, amount);
 
         //EIP 1884 (https://eips.ethereum.org/EIPS/eip-1884) within Istanbul hard fork
         //Avoidance of Solidity's transfer() or send() methods
@@ -111,7 +149,7 @@ contract Remittance is Stoppable{
      * @param hashedPassword Hashed password created by createHashedPassword()
      */
     function reclaimFunds(bytes32 hashedPassword) public onlyIfRunning returns(bool success){
-        require(hashedPassword != "", "'hashedPassword' must be provided");
+        require(hashedPassword != "", "hashedPassword must be provided");
         require(remittanceStructs[hashedPassword].origin == msg.sender, "Remittance can only be reclaimed by origin");
         require(remittanceStructs[hashedPassword].deadline < block.number, "Remittance is not expired yet");
 
@@ -119,11 +157,38 @@ contract Remittance is Stoppable{
         require(amount > 0, "No value to retrieve");
 
         remittanceStructs[hashedPassword].amount = 0;
-        emit LogFundsReclaimed(msg.sender, amount);
+        remittanceStructs[hashedPassword].deadline = 0;
+        emit LogFundsReclaimed(hashedPassword, msg.sender, amount);
 
         //EIP 1884 (https://eips.ethereum.org/EIPS/eip-1884) within Istanbul hard fork
         //Avoidance of Solidity's transfer() or send() methods
         (success, ) = msg.sender.call{value: amount}("");
         require(success, "Transfer failed");
+    }
+
+    /**
+     * @dev Withdraw collected fees from deposits
+     */
+    function withdrawFees() public onlyOwner returns(bool success){
+        uint amount = contractCollectedFees;
+        require(amount > 0, "No fees to withdraw");
+        contractCollectedFees = 0;
+
+        emit LogFeesWithdrawn(msg.sender, amount);
+
+        //EIP 1884 (https://eips.ethereum.org/EIPS/eip-1884) within Istanbul hard fork
+        //Avoidance of Solidity's transfer() or send() methods
+        (success, ) = msg.sender.call{value: amount}("");
+        require(success, "Transfer failed");
+    }
+
+    /**
+     * @dev Ownership can only be renounced (by owner). It is required that contract fees were withdrawn and contractFeePercentage was set to 0
+     */
+    function renounceOwnership() public override onlyOwner returns(bool success){
+        require(contractCollectedFees == 0, "contractCollectedFees were not withdrawn");
+        require(contractFeePercentage == 0, "contractFeePercentage was not set to 0");
+
+        return Owned.renounceOwnership();
     }
 }

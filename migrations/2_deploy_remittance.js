@@ -8,6 +8,8 @@ module.exports = function (deployer, network, accounts) {
         running: 1,
         destroyed: 2,
     };
+    const maxDurationBlocks = 1000;
+    const contractFeePercentage = 10;
 
-    deployer.deploy(Remittance, contractState.running, {from: accounts[0]});
+    deployer.deploy(Remittance, contractState.running, maxDurationBlocks, contractFeePercentage, {from: accounts[0]});
 };

@@ -1,7 +1,8 @@
 {
   "name": "b9lab_ethsub-project2-remittance",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Small project and assisted by https://academy.b9lab.com",
+  "private": true,
   "main": "truffle-config.js",
   "directories": {
     "test": "test"
@@ -16,6 +17,7 @@
     "@openzeppelin/contracts": "^3.2.0"
   },
   "devDependencies": {
+    "ganache-time-traveler": "^1.0.15",
     "truffle-assertions": "^0.9.2"
   }
 }

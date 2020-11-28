@@ -3,7 +3,7 @@
 //B9lab ETH-SUB Ethereum Developer Subscription Course
 //>>> Owned <<<
 //
-//Last update: 07.11.2020
+//Last update: 25.11.2020
 
 pragma solidity 0.6.12;
 
@@ -47,7 +47,7 @@ contract Owned{
     }
 
     //Owner can resign
-    function renounceOwnership() public onlyOwner returns(bool success){
+    function renounceOwnership() public virtual onlyOwner returns(bool success){
         owner = address(0x0);
 
         emit LogOwnershipRenounced(msg.sender);
