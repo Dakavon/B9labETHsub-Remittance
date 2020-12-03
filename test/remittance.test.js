@@ -1,7 +1,7 @@
 //B9lab ETH-SUB Ethereum Developer Subscription Course
 //>>> Remittance <<< - Test file
 //
-//Last update: 28.11.2020
+//Last update: 03.12.2020
 
 const Remittance = artifacts.require('Remittance');
 const truffleAssert = require('truffle-assertions');
@@ -344,7 +344,7 @@ contract("Remittance", async (accounts) => {
             assert.strictEqual(remittanceStruct.deadline.toNumber(), expectedDeadline, "deadline was not stored correctly");
 
             const contractBalanceAfter = await web3.eth.getBalance(instance.address);
-            const contractCollectedFees = await instance.contractCollectedFees({from: sender});
+            const contractCollectedFees = await instance.contractCollectedFees(owner, {from: sender});
             assert.strictEqual(contractBalanceAfter.toString(10), amount.toString(10), "contracts balance is not correct");
             assert.strictEqual(contractCollectedFees.toString(10), expectedFee.toString(10), "contracts fee balance is not correct");
         });
@@ -491,13 +491,6 @@ contract("Remittance", async (accounts) => {
             );
         });
 
-        it("should not be possible to reclaim funds without providing known 'hashedPassword'", async () => {
-            await truffleAssert.reverts(
-                instance.reclaimFunds(web3.utils.asciiToHex(""), {from: sender}),
-                "hashedPassword must be provided"
-            );
-        });
-
         it("should only be 'sender'/'origin' who is allowed to reclaim funds", async () => {
             await truffleAssert.reverts(
                 instance.reclaimFunds(hashedPassword, {from: attacker}),
@@ -632,7 +625,7 @@ contract("Remittance", async (accounts) => {
         it("should be possible to withdraw fees", async () => {
             const contractBalanceBefore = await web3.eth.getBalance(instance.address);
             const ownerBalanceBefore = await web3.eth.getBalance(owner);
-            const contractCollectedFeesBefore = await instance.contractCollectedFees({from: owner});
+            const contractCollectedFeesBefore = await instance.contractCollectedFees(owner, {from: owner});
             const remittanceStruct = await instance.remittanceStructs(hashedPassword);
 
             const returned = await instance.withdrawFees.call({from: owner});
@@ -649,7 +642,7 @@ contract("Remittance", async (accounts) => {
 
             const contractBalanceAfter = await web3.eth.getBalance(instance.address);
             const ownerBalanceAfter = await web3.eth.getBalance(owner);
-            const contractCollectedFeesAfter = await instance.contractCollectedFees({from: owner});
+            const contractCollectedFeesAfter = await instance.contractCollectedFees(owner, {from: owner});
 
             assert.strictEqual(
                 toBN(contractBalanceBefore).sub(toBN(contractCollectedFeesBefore)).toString(10),
@@ -703,19 +696,19 @@ contract("Remittance", async (accounts) => {
             );
         });
 
-        it("should not be possible to renounce ownership when collected fees were not withdrawn", async () => {
-            await truffleAssert.reverts(
-                instance.renounceOwnership({from: owner}),
-                "contractCollectedFees were not withdrawn"
-            );
-        });
-
         it("should not be possible to renounce ownership before 'contractFeePercentage' was set to 0", async () => {
-            await instance.withdrawFees({from: owner});
-
             await truffleAssert.reverts(
                 instance.renounceOwnership({from: owner}),
                 "contractFeePercentage was not set to 0"
+            );
+        });
+
+        it("should not be possible to renounce ownership when collected fees were not withdrawn", async () => {
+            await instance.changeContractFeePercentage(0, {from: owner});
+
+            await truffleAssert.reverts(
+                instance.renounceOwnership({from: owner}),
+                "contractCollectedFees were not withdrawn"
             );
         });
 

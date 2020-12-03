@@ -3,7 +3,7 @@
 //B9lab ETH-SUB Ethereum Developer Subscription Course
 //>>> Remittance <<<
 //
-//Last update: 28.11.2020
+//Last update: 03.12.2020
 
 pragma solidity 0.6.12;
 
@@ -21,8 +21,9 @@ contract Remittance is Stoppable{
     uint public maxDurationBlocks;
 
     //Contract fee that is taken from the deposited funds
-    uint public contractCollectedFees;
+    mapping(address => uint) public contractCollectedFees;
     uint public contractFeePercentage;
+    uint constant MAX_FEES = 50;
 
     struct RemittanceStruct{
         address origin;
@@ -31,17 +32,24 @@ contract Remittance is Stoppable{
     }
     mapping(bytes32 => RemittanceStruct) public remittanceStructs;
 
-    event LogFundsDeposited(bytes32 hashedPassword, address indexed origin, uint amount, uint deadline, uint fee);
-    event LogFundsWithdrawn(bytes32 hashedPassword, address indexed receiver, uint amount);
-    event LogFundsReclaimed(bytes32 hashedPassword, address indexed origin, uint amount);
+    event LogFundsDeposited(bytes32 indexed hashedPassword, address indexed origin, uint amount, uint deadline, uint fee);
+    event LogFundsWithdrawn(bytes32 indexed hashedPassword, address indexed receiver, uint amount);
+    event LogFundsReclaimed(bytes32 indexed hashedPassword, address indexed origin, uint amount);
     event LogMaxDurationChanged(address indexed sender, uint oldMaxDurationBlocks, uint newMaxDurationBlocks);
     event LogContractFeePercentageChanged(address indexed sender, uint oldContractFeePercentage, uint newContractFeePercentage);
     event LogFeesWithdrawn(address indexed sender, uint amount);
 
+    /**
+     * @dev Contract constructor function
+     *
+     * @param initialState The state the contract is in after deployment (paused or running)
+     * @param _maxDurationBlocks Sets the initial upper duration limit in blocks until remittances can be claimed
+     * @param _contractFeePercentage Sets the initial fees for depositing funds in this contract
+     */
     constructor(State initialState, uint _maxDurationBlocks, uint _contractFeePercentage)
         Stoppable(initialState) public {
-            require(_maxDurationBlocks > 0, "maxDurationBlocks needs to be greater than 0");
-            require(0 <= _contractFeePercentage && _contractFeePercentage <= 50,
+            require(0 < _maxDurationBlocks, "maxDurationBlocks needs to be greater than 0");
+            require(0 <= _contractFeePercentage && _contractFeePercentage <= MAX_FEES,
                 "contractFeePercentage must be a value between 0 (lower bound) and 50 (upper bound)");
 
             maxDurationBlocks = _maxDurationBlocks;
@@ -64,7 +72,7 @@ contract Remittance is Stoppable{
     /**
      * @dev Change the maximum allowed duration until the remittance funds can be reclaimed by sender
      *
-     * @param newMaxDurationBlocks New maximum duration in blocks for new remittanceses
+     * @param newMaxDurationBlocks New maximum duration in blocks for new remittances
      */
     function changeMaxDurationBlocks(uint newMaxDurationBlocks) public onlyOwner returns(bool success){
         require(newMaxDurationBlocks > 0, "newMaxDurationBlocks needs to be greater than 0");
@@ -79,10 +87,11 @@ contract Remittance is Stoppable{
     /**
      * @dev Change the contract fee percentage that takes a share of the deposits for this contact
      *
-     * @param newContractFeePercentage The new fee percentage of this contract is given in '%', therefore between 0 (lower bound) and 100 (upper bound)
+     * @param newContractFeePercentage The new fee percentage of this contract is given in '%',
+     *          therefore between 0 (lower bound) and 50 (upper bound)
      */
     function changeContractFeePercentage(uint newContractFeePercentage) public onlyOwner returns(bool success){
-        require(0 <= newContractFeePercentage && newContractFeePercentage <= 50,
+        require(0 <= newContractFeePercentage && newContractFeePercentage <= MAX_FEES,
             "newContractFeePercentage must be a value between 0 (lower bound) and 50 (upper bound)");
 
         uint oldContractFeePercentage = contractFeePercentage;
@@ -111,10 +120,12 @@ contract Remittance is Stoppable{
 
         uint deadline = block.number.add(durationBlocks);
 
+        address contractOwner = getOwner();
+
         remittanceStructs[hashedPassword].origin = msg.sender;
         remittanceStructs[hashedPassword].amount = amount;
         remittanceStructs[hashedPassword].deadline = deadline;
-        contractCollectedFees = contractCollectedFees.add(fee);
+        contractCollectedFees[contractOwner] = contractCollectedFees[contractOwner].add(fee);
 
         emit LogFundsDeposited(hashedPassword, msg.sender, amount, deadline, fee);
         return true;
@@ -149,7 +160,6 @@ contract Remittance is Stoppable{
      * @param hashedPassword Hashed password created by createHashedPassword()
      */
     function reclaimFunds(bytes32 hashedPassword) public onlyIfRunning returns(bool success){
-        require(hashedPassword != "", "hashedPassword must be provided");
         require(remittanceStructs[hashedPassword].origin == msg.sender, "Remittance can only be reclaimed by origin");
         require(remittanceStructs[hashedPassword].deadline < block.number, "Remittance is not expired yet");
 
@@ -170,9 +180,9 @@ contract Remittance is Stoppable{
      * @dev Withdraw collected fees from deposits
      */
     function withdrawFees() public onlyOwner returns(bool success){
-        uint amount = contractCollectedFees;
+        uint amount = contractCollectedFees[msg.sender];
         require(amount > 0, "No fees to withdraw");
-        contractCollectedFees = 0;
+        contractCollectedFees[msg.sender] = 0;
 
         emit LogFeesWithdrawn(msg.sender, amount);
 
@@ -183,11 +193,12 @@ contract Remittance is Stoppable{
     }
 
     /**
-     * @dev Ownership can only be renounced (by owner). It is required that contract fees were withdrawn and contractFeePercentage was set to 0
+     * @dev Ownership can only be renounced (by owner).
+     *      It is required that contract fees were withdrawn and contractFeePercentage was set to 0
      */
     function renounceOwnership() public override onlyOwner returns(bool success){
-        require(contractCollectedFees == 0, "contractCollectedFees were not withdrawn");
         require(contractFeePercentage == 0, "contractFeePercentage was not set to 0");
+        require(contractCollectedFees[getOwner()] == 0, "contractCollectedFees were not withdrawn");
 
         return Owned.renounceOwnership();
     }

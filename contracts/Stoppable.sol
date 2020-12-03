@@ -3,7 +3,7 @@
 //B9lab ETH-SUB Ethereum Developer Subscription Course
 //>>> Stoppable <<<
 //
-//Last update: 07.11.2020
+//Last update: 03.12.2020
 
 pragma solidity 0.6.12;
 
@@ -38,7 +38,7 @@ contract Stoppable is Owned{
 
     //Initial function
     constructor(State initialState) public{
-        require(uint8(initialState) <= 1, "Stoppable: Initial contract state can be 0 (paused) or 1 (running)");
+        require(uint(initialState) < uint(State.destroyed), "Stoppable: Initial contract state can be 0 (paused) or 1 (running)");
         state = initialState;
     }
 
