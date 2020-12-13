@@ -36,3 +36,7 @@ Small project and assisted by B9lab (https://academy.b9lab.com)
 >* make the contract a utility that can be used by David, Emma and anybody with an address
 >* make you, the owner of the contract, take a cut of the Ethers smaller than what it would cost Alice to deploy the same contract herself
 >* did you degrade safety in the name of adding features?
+
+![Screenshot_ProjectRemittance_Info](https://github.com/Dakavon/B9labETHsub-Remittance/blob/main/screenshots/RemittanceApp_Remittance_Info.png)
+
+![Screenshot_ProjectRemittance_Deposit](https://github.com/Dakavon/B9labETHsub-Remittance/blob/main/screenshots/RemittanceApp_Remittance_Deposit.png)

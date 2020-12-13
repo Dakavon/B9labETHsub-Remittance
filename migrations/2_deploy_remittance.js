@@ -11,5 +11,10 @@ module.exports = function (deployer, network, accounts) {
     const maxDurationBlocks = 1000;
     const contractFeePercentage = 10;
 
-    deployer.deploy(Remittance, contractState.running, maxDurationBlocks, contractFeePercentage, {from: accounts[0]});
+    if(network === "ropsten"){
+        deployer.deploy(Remittance, contractState.running, maxDurationBlocks, contractFeePercentage, {from: accounts[0]});
+    }
+    else if(network === "develop"){
+        deployer.deploy(Remittance, contractState.running, maxDurationBlocks, contractFeePercentage, {from: accounts[0]});
+    }
 };
