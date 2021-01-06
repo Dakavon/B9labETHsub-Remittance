@@ -72,32 +72,19 @@ export default function RemittanceInfo(){
         setIsLoading (! (eventsLoaded.deposit && eventsLoaded.withdraw) )
     }, [eventsLoaded]) 
 
-    // useEffect(() => {
-    //     const getNewEvents = async () => {
-    //         if(appVariables.gotPastEvents === true
-    //             && appVariables.eventListener === false){
-
-    //             await instance.events({})
-    //             .on('data', newEvent => {
-
-    //               setEventLogs(_eventLogs => ([
-    //                 ..._eventLogs,
-    //                 newEvent
-    //               ]));
-
-    //               setAppVariables(_appVariables => ({
-    //                 ..._appVariables,
-    //                 eventListener: true,
-    //               }));
-    //             });
-    //           }
-    //     };
-
-    //     if(instance !== undefined){
-    //         getNewEvents();
-    //     };
-    // }, [instance]);
-
+    useEffect(() => {
+        if (!instance || isLoading) return;
+        const listener = instance.events({});
+        listener.on('data', newEvent => {
+            setEventLogs(_eventLogs => ([
+            ..._eventLogs,
+            newEvent
+            ]));
+        });
+        return function cleanup() {
+            listener.off('data');
+        }
+    }, [instance]);
 
     return (
         <div>
