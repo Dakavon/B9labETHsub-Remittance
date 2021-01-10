@@ -15,31 +15,33 @@ export default function RemittanceInfo(){
 
     const [isLoading, setIsLoading] = useState(true);
 
-    const [contractInfo, setContractInfo] = useState({
-        networkID: undefined,
-        contractTransactionHash: undefined,
-        contractAddress: undefined,
-        contractDeployer: undefined,
-        contractDeployedBlock: 0,
-    });
-
+    const [contractInfo, setContractInfo] = useState();
     const [eventDepositLogs, setEventDepositLogs] = useState([]);
     const [eventWithdrawLogs, setEventWithdrawLogs] = useState([]);
-    const [appVariables, setAppVariables] = useState({
-        gotPastEvents: false,
-        eventListener: false,
-      });
+    const [eventsLoaded, setEventsLoaded] = useState({
+        deposit: false,
+        withdraw: false,
+    })
 
-
+    const getPastEvents = async (eventType, instance, filter, fromBlock) => {
+        await instance.getPastEvents(
+            eventType,
+            {
+                filter,
+                fromBlock,
+                toBlock: "latest"
+            }
+        );
+    }
     useEffect(() => {
-        const getContractInfo = async () => {
-            try{
+        (async () => {
+            if (web3 && instance) {
                 //Gather information from network
                 const networkID = await web3.eth.net.getId();
                 const contractNetwork = RemittanceJSON.networks[networkID];
                 const contractReceipt = await web3.eth.getTransactionReceipt(contractNetwork.transactionHash);
 
-                setContractInfo({// ...contractInfo,
+                setContractInfo({
                     networkID: networkID,
                     contractTransactionHash: contractNetwork.transactionHash,
                     contractAddress: contractReceipt.contractAddress,
@@ -47,99 +49,42 @@ export default function RemittanceInfo(){
                     contractDeployedBlock: contractReceipt.blockNumber,
                 });
             }
-            catch(error){
-                // Catch any errors for any of the above operations.
-                console.error(error);
-            };
-        };
-
-        if(instance !== undefined){
-            getContractInfo();
-        };
+        })();
     }, [web3, instance]);
 
+    useEffect(() => {
+        if (contractInfo.contractDeployedBlock > 0) {
+            const pastEventsDepositArray = await getPastEvents('LogFundsDeposited', instance, { origin: account }, contractInfo.contractDeployedBlock);
+            setEventDepositLogs(pastEventsDepositArray);
+            setEventsLoaded(_el => ({ ..._el, deposit: true}) );
+        }
+    }, [contractInfo])
 
     useEffect(() => {
-        const getPastEvents = async() => {
-            if(contractInfo.contractDeployedBlock !== 0
-                && appVariables.gotPastEvents === false){
-              try{
-                const pastEventsDepositArray = await instance.getPastEvents(
-                    'LogFundsDeposited',
-                    {
-                    filter: {
-                        origin: account,
-                    //   date:
-                    },
-                    fromBlock: contractInfo.contractDeployedBlock,
-                    toBlock: "latest"
-                    }
-                );
-                //add status of deposits here!
+        if (contractInfo.contractDeployedBlock > 0) {
+            const pastEventsWithdrawArray = await getPastEvents('LogFundsWithdrawn', instance, { receiver: account }, contractInfo.contractDeployedBlock);
+            setEventWithdrawLogs(pastEventsWithdrawArray);
+            setEventsLoaded(_el => ({ ..._el, withdraw: true }));
+        }
+    }, [contractInfo])
 
-                const pastEventsWithdrawArray = await instance.getPastEvents(
-                    'LogFundsWithdrawn',
-                    {
-                    filter: {
-                        receiver: account,
-                    //   date:
-                    },
-                    fromBlock: contractInfo.contractDeployedBlock,
-                    toBlock: "latest"
-                    }
-                );
+    useEffect(() => {
+        setIsLoading (! (eventsLoaded.deposit && eventsLoaded.withdraw) )
+    }, [eventsLoaded]) 
 
-                setEventDepositLogs(pastEventsDepositArray);
-                setEventWithdrawLogs(pastEventsWithdrawArray);
-
-                setAppVariables(_oldVariables => ({
-                    ..._oldVariables,
-                    gotPastEvents: true,
-                }));
-                setIsLoading(false);
-              }
-              catch(error){
-                    // Catch any errors for any of the above operations.
-                    console.error(error);
-                    setIsLoading(false);
-              };
-            };
-
-            // console.log("eventDepositLogs: ", eventDepositLogs);
-            // console.log("eventWithdrawLogs: ", eventWithdrawLogs);
-        };
-
-        if(instance !== undefined){
-            getPastEvents();
-        };
-    }, [instance, appVariables.gotPastEvents, contractInfo.contractDeployedBlock, account]);
-
-    // useEffect(() => {
-    //     const getNewEvents = async () => {
-    //         if(appVariables.gotPastEvents === true
-    //             && appVariables.eventListener === false){
-
-    //             await instance.events({})
-    //             .on('data', newEvent => {
-
-    //               setEventLogs(_eventLogs => ([
-    //                 ..._eventLogs,
-    //                 newEvent
-    //               ]));
-
-    //               setAppVariables(_appVariables => ({
-    //                 ..._appVariables,
-    //                 eventListener: true,
-    //               }));
-    //             });
-    //           }
-    //     };
-
-    //     if(instance !== undefined){
-    //         getNewEvents();
-    //     };
-    // }, [instance]);
-
+    useEffect(() => {
+        if (!instance || isLoading) return;
+        const listener = instance.events({});
+        listener.on('data', newEvent => {
+            setEventLogs(_eventLogs => ([
+            ..._eventLogs,
+            newEvent
+            ]));
+        });
+        return function cleanup() {
+            listener.off('data');
+        }
+    }, [instance]);
 
     return (
         <div>
@@ -184,11 +129,11 @@ export default function RemittanceInfo(){
         </Box><br />
         <div className="logs">
             <Heading fontSize="md">Your deposits:</Heading>
-                {isLoading === true ? <Skeleton height="30px" /> :
+                {isLoading ? <Skeleton height="30px" /> :
                 (eventDepositLogs.length === 0 ? <pre> None.</pre> :
                 <Accordion allowToggle m="5px">
                     {eventDepositLogs.map((thisEvent, index) => (
-                        <AccordionItem key="{thisEvent.id}">
+                        <AccordionItem key={thisEvent.id}>
                             <AccordionButton>
                                 <Box flex="1" textAlign="left">
                                 Deposit #{index}
@@ -216,7 +161,7 @@ export default function RemittanceInfo(){
                 (eventWithdrawLogs.length === 0 ? <pre> None.</pre> :
                 <Accordion allowToggle m="5px">
                 {eventWithdrawLogs.map((thisEvent, index) => (
-                    <AccordionItem key="{thisEvent.id}">
+                    <AccordionItem key={thisEvent.id}>
                         <AccordionButton>
                             <Box flex="1" textAlign="left">
                             Withdrawal #{index}
