@@ -18129,11 +18129,11 @@
       },
       "links": {},
       "address": "0x69B3aE172d79360EabC03Bccb54D04876aA1983d",
-      "transactionHash": "0x8a838b64bfb228210f049e54302c748a189fee973f98c7943b3b9683247007c2"
+      "transactionHash": "0xd5e29986a9f5b9a7df3f6586b717bcc4e01b8b11de1b4994f97d56409b079bab"
     }
   },
-  "schemaVersion": "3.2.5",
-  "updatedAt": "2020-12-13T19:29:32.609Z",
+  "schemaVersion": "3.3.3",
+  "updatedAt": "2021-01-11T20:11:19.045Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",

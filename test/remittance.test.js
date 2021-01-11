@@ -1,12 +1,13 @@
 //B9lab ETH-SUB Ethereum Developer Subscription Course
 //>>> Remittance <<< - Test file
 //
-//Last update: 03.12.2020
+//Last update: 07.01.2021
 
 const Remittance = artifacts.require('Remittance');
 const truffleAssert = require('truffle-assertions');
 const timeMachine = require('ganache-time-traveler');
 const { toBN } = web3.utils;
+const checkIfFiveAccountsAvailable = require('./utils/printAccounts');
 
 contract("Remittance", async (accounts) => {
 
@@ -25,13 +26,7 @@ contract("Remittance", async (accounts) => {
     const hexClearPassword = web3.utils.asciiToHex(clearPassword);
 
 
-    before("should be five accounts available: ", async () => {
-        console.log("\n    There are five accounts available:");
-        for(let i=0; i<5; i++){
-            console.log(`\t#${i}: ${accounts[i]}`);
-        }
-        console.log("\n");
-    });
+    checkIfFiveAccountsAvailable(accounts);
 
 
     describe("constructor()", async () => {
@@ -57,12 +52,11 @@ contract("Remittance", async (accounts) => {
         });
 
         it("should not be possible to set 'defaultContractFeePercentage' below 0 or higher than 50", async () => {
-            await truffleAssert.reverts(
+            await truffleAssert.fails(
                 Remittance.new(
                     contractState.running, defaultMaxDurationBlocks, -1,
                     {from: owner}
-                ),
-                "contractFeePercentage must be a value between 0 (lower bound) and 50 (upper bound)"
+                )
             );
 
             await truffleAssert.reverts(
@@ -224,9 +218,8 @@ contract("Remittance", async (accounts) => {
         });
 
         it("should not be possible to change the value for 'contractFeePercentage' lower than 0 (lower bound) and above 50 (upper bound)", async () => {
-            await truffleAssert.reverts(
-                instance.changeContractFeePercentage(-1, {from: owner}),
-                "newContractFeePercentage must be a value between 0 (lower bound) and 50 (upper bound)"
+            await truffleAssert.fails(
+                instance.changeContractFeePercentage(-1, {from: owner})
             );
 
             await truffleAssert.reverts(
@@ -324,8 +317,7 @@ contract("Remittance", async (accounts) => {
 
             const expectedFee = toBN(amount).mul(toBN(contractFeePercentage)).div(toBN(100));
             const expectedAmount = toBN(amount).sub(toBN(expectedFee));
-            const blockNumber = await web3.eth.getBlockNumber();
-            const expectedDeadline = blockNumber + durationBlocks;
+            const expectedDeadline = txObj.receipt.blockNumber + durationBlocks;
 
             const loghashedPassword = txObj.receipt.logs[0].args.hashedPassword;
             const logOrigin = txObj.receipt.logs[0].args.origin;

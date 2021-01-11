@@ -1,4 +1,3 @@
-
 import React, { useContext, useEffect, useState } from "react";
 import { Heading, Divider, Stack, Skeleton, Box, Button,
     Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton, PopoverHeader, PopoverBody,
@@ -15,7 +14,7 @@ export default function RemittanceInfo(){
 
     const [isLoading, setIsLoading] = useState(true);
 
-    const [contractInfo, setContractInfo] = useState();
+    const [contractInfo, setContractInfo] = useState({});
     const [eventDepositLogs, setEventDepositLogs] = useState([]);
     const [eventWithdrawLogs, setEventWithdrawLogs] = useState([]);
     const [eventsLoaded, setEventsLoaded] = useState({
@@ -24,15 +23,16 @@ export default function RemittanceInfo(){
     })
 
     const getPastEvents = async (eventType, instance, filter, fromBlock) => {
-        await instance.getPastEvents(
-            eventType,
-            {
-                filter,
-                fromBlock,
-                toBlock: "latest"
-            }
-        );
+        return await instance.getPastEvents(
+                eventType,
+                {
+                    filter,
+                    fromBlock,
+                    toBlock: "latest"
+                }
+            );
     }
+
     useEffect(() => {
         (async () => {
             if (web3 && instance) {
@@ -53,38 +53,54 @@ export default function RemittanceInfo(){
     }, [web3, instance]);
 
     useEffect(() => {
-        if (contractInfo.contractDeployedBlock > 0) {
-            const pastEventsDepositArray = await getPastEvents('LogFundsDeposited', instance, { origin: account }, contractInfo.contractDeployedBlock);
-            setEventDepositLogs(pastEventsDepositArray);
-            setEventsLoaded(_el => ({ ..._el, deposit: true}) );
-        }
-    }, [contractInfo])
+        (async () => {
+            if (web3 && instance) {
+                const pastEventsDepositArray = await getPastEvents('LogFundsDeposited', instance, { origin: account }, contractInfo.contractDeployedBlock);
+                setEventDepositLogs(pastEventsDepositArray);
+                setEventsLoaded(_el => ({ ..._el, deposit: true}) );
+            }
+        })();
+    }, [web3, instance, account, contractInfo]);
 
     useEffect(() => {
-        if (contractInfo.contractDeployedBlock > 0) {
-            const pastEventsWithdrawArray = await getPastEvents('LogFundsWithdrawn', instance, { receiver: account }, contractInfo.contractDeployedBlock);
-            setEventWithdrawLogs(pastEventsWithdrawArray);
-            setEventsLoaded(_el => ({ ..._el, withdraw: true }));
-        }
-    }, [contractInfo])
+        (async () => {
+            if (web3 && instance) {
+                const pastEventsWithdrawArray = await getPastEvents('LogFundsWithdrawn', instance, { receiver: account }, contractInfo.contractDeployedBlock);
+                setEventWithdrawLogs(pastEventsWithdrawArray);
+                setEventsLoaded(_el => ({ ..._el, withdraw: true }));
+            }
+        })();
+    }, [web3, instance, account, contractInfo])
 
     useEffect(() => {
         setIsLoading (! (eventsLoaded.deposit && eventsLoaded.withdraw) )
-    }, [eventsLoaded]) 
+    }, [eventsLoaded])
 
     useEffect(() => {
         if (!instance || isLoading) return;
-        const listener = instance.events({});
-        listener.on('data', newEvent => {
-            setEventLogs(_eventLogs => ([
-            ..._eventLogs,
-            newEvent
+        const listenOnDeposits = instance.events.LogFundsDeposited({
+            filter: {origin: account}
+        });
+        const listenOnWithdraws = instance.events.LogFundsWithdrawn({
+            filter: {origin: account}
+        });
+        listenOnDeposits.on('data', newEvent => {
+            setEventDepositLogs(_eventLogs => ([
+                ..._eventLogs,
+                newEvent
+            ]));
+        });
+        listenOnWithdraws.on('data', newEvent => {
+            setEventWithdrawLogs(_eventLogs => ([
+                ..._eventLogs,
+                newEvent
             ]));
         });
         return function cleanup() {
-            listener.off('data');
+            listenOnDeposits.off('data');
+            listenOnWithdraws.off('data');
         }
-    }, [instance]);
+    }, [instance, account, isLoading]);
 
     return (
         <div>
@@ -178,7 +194,7 @@ export default function RemittanceInfo(){
                 ))}
                 </Accordion>
                 )}
-        </div>
+                </div>
         </div>
     )
 }

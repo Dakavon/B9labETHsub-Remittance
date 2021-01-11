@@ -23,11 +23,9 @@ const HDWalletProvider = require('@truffle/hdwallet-provider');
 //
 const fs = require('fs');
 const mnemonic = fs.readFileSync(".secret").toString().trim();
-
-const path = require('path');
+const infuraProjectID = fs.readFileSync(".infuraProjectID").toString().trim();
 
 module.exports = {
-  contracts_build_directory: path.join(__dirname, "client/src/contracts"),
   /**
    * Networks define how you connect to your ethereum client and let you set the
    * defaults web3 uses to send transactions. If you don't specify one truffle
@@ -37,6 +35,7 @@ module.exports = {
    *
    * $ truffle test --network <network-name>
    */
+  contracts_build_directory: ("./client/src/contracts"),
 
   networks: {
     // Useful for testing. The `development` name is special - truffle uses it by default
@@ -67,7 +66,7 @@ module.exports = {
     // Useful for deploying to a public network.
     // NB: It's important to wrap the provider as a function.
     ropsten: {
-      provider: () => new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/xxxx`),
+      provider: () => new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/${infuraProjectID}`),
       network_id: 3,       // Ropsten's id
       gas: 5500000,        // Ropsten has a lower block limit than mainnet
       confirmations: 2,    // # of confs to wait between deployments. (default: 0)

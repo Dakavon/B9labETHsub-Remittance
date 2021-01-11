@@ -1,10 +1,11 @@
 //B9lab ETH-SUB Ethereum Developer Subscription Course
 //>>> Stoppable <<< - Test file
 //
-//Last update: 08.11.2020
+//Last update: 07.01.2021
 
 const Stoppable = artifacts.require('Stoppable');
 const truffleAssert = require('truffle-assertions');
+const checkIfFiveAccountsAvailable = require('./utils/printAccounts');
 
 contract("Stoppable", (accounts) => {
 
@@ -18,13 +19,7 @@ contract("Stoppable", (accounts) => {
         willFail: 3,
     };
 
-    before("should be five accounts available: ", async () => {
-        console.log("\n    There are five accounts available:");
-        for(let i=0; i<5; i++){
-            console.log(`\t#${i}: ${accounts[i]}`);
-        }
-        console.log("\n");
-    });
+    checkIfFiveAccountsAvailable(accounts);
 
     describe("constructor()", async () => {
 

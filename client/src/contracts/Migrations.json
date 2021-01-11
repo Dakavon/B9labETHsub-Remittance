@@ -904,11 +904,11 @@
       "events": {},
       "links": {},
       "address": "0x542a1CffaFa580a2850EbE500a254d9240Af9D88",
-      "transactionHash": "0x3b15e4b67e00fb3a33bc609c0e7ef5303218740acbdd310f5c58b5c940371027"
+      "transactionHash": "0xef65e5ed4943eb01ffab9ea82a40d402455f7a30700285bdd1a745c5a88b8830"
     }
   },
-  "schemaVersion": "3.2.5",
-  "updatedAt": "2020-12-13T19:29:32.630Z",
+  "schemaVersion": "3.3.3",
+  "updatedAt": "2021-01-11T20:11:19.113Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
