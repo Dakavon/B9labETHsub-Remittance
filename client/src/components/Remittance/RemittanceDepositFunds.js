@@ -2,14 +2,15 @@ import React, { useContext, useState } from "react";
 import { Stack, FormControl, FormLabel, Box, Button, useToast,
     Input, InputGroup, NumberInput, NumberInputField, NumberInputStepper,
     NumberIncrementStepper, NumberDecrementStepper, InputLeftAddon } from '@chakra-ui/react';
-import web3 from "web3";
 
-import { AccountContext, InstanceContext } from "./RemittanceContext";
+import { Web3Context, AccountContext, InstanceContext } from "./RemittanceContext";
+
 
 export default function RemittanceDepositFunds(){
 
-    const {account}     = useContext(AccountContext);
-    const {instance}    = useContext(InstanceContext);
+    const [web3]                            = useContext(Web3Context);
+    const [account]                         = useContext(AccountContext);
+    const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [appVariables, setAppVariables] = useState({
         inputs: {
@@ -92,8 +93,8 @@ export default function RemittanceDepositFunds(){
             onChange={event => setAppVariables({
                 ...appVariables,
                 inputs: {
-                ...appVariables.inputs,
-                hashedPassword: event.target.value,
+                    ...appVariables.inputs,
+                    hashedPassword: event.target.value,
                 }
             })}
             />
@@ -106,8 +107,8 @@ export default function RemittanceDepositFunds(){
                 onChange={newValue => setAppVariables({
                     ...appVariables,
                     inputs: {
-                    ...appVariables.inputs,
-                    durationBlocks: newValue,
+                        ...appVariables.inputs,
+                        durationBlocks: newValue,
                     }
                 })}
                 >
@@ -128,8 +129,8 @@ export default function RemittanceDepositFunds(){
                     onChange={event => setAppVariables({
                         ...appVariables,
                         inputs: {
-                        ...appVariables.inputs,
-                        amount: event.target.value,
+                            ...appVariables.inputs,
+                            amount: event.target.value,
                         }
                     })}
                     />
@@ -137,14 +138,20 @@ export default function RemittanceDepositFunds(){
             </FormControl>
 
         </Stack><br />
-            <Button colorScheme="green" variant="solid" fontWeight="300" size="sm"
-            onClick={() => depositFunds(
-                appVariables.inputs.hashedPassword,
-                appVariables.inputs.durationBlocks,
-                appVariables.inputs.amount,
-            )}>
-            Deposit
-            </Button>
+            {instanceIsDeployed ?
+                <Button colorScheme="green" variant="solid" fontWeight="300" size="sm"
+                    onClick={() => depositFunds(
+                        appVariables.inputs.hashedPassword,
+                        appVariables.inputs.durationBlocks,
+                        appVariables.inputs.amount,
+                    )}>
+                    Deposit
+                </Button>
+                :
+                <Button colorScheme="green" variant="solid" fontWeight="300" size="sm" isDisabled>
+                    Deposit
+                </Button>
+            }
         </form>
         </Box>
         </div>

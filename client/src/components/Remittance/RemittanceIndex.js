@@ -7,12 +7,12 @@ import RemittanceDepositFunds from './RemittanceDepositFunds';
 import RemittanceWithdrawFunds from './RemittanceWithdrawFunds';
 import RemittanceReclaimFunds from './RemittanceReclaimFunds';
 
-import { InstanceContext, Web3Context } from "./RemittanceContext";
+import { Web3Context, InstanceContext } from "./RemittanceContext";
 
 
 export default function RemittanceIndex(){
-    const {instance}    = useContext(InstanceContext);
-    const {web3}        = useContext(Web3Context);
+    const [web3]                          = useContext(Web3Context);
+    const {instance, instanceIsDeployed}  = useContext(InstanceContext);
 
     const [isLoading, setIsLoading] = useState(true);
 
@@ -22,35 +22,32 @@ export default function RemittanceIndex(){
     });
 
     useEffect(() => {
-      const getInfos = async () => {
-          try{
-              const _balance = await web3.eth.getBalance(instance._address);
-              const _balanceEther = web3.utils.fromWei(_balance, "ether");
+      (async () => {
+          if(web3 && instanceIsDeployed){
+              try{
+                  const _balance = await web3.eth.getBalance(instance._address);
+                  const _balanceEther = web3.utils.fromWei(_balance, "ether");
 
-              const _contractFeePercentage = await instance.methods.contractFeePercentage().call();
+                  const _contractFeePercentage = await instance.methods.contractFeePercentage().call();
 
-
-              setContractInfo({
-                balance: _balanceEther,
-                contractFeePercentage: _contractFeePercentage,
-              });
-              setIsLoading(false);
+                  setContractInfo({
+                    balance: _balanceEther,
+                    contractFeePercentage: _contractFeePercentage,
+                  });
+                  setIsLoading(false);
+              }
+              catch(error){
+                  // Catch any errors for any of the above operations.
+                  console.error(error);
+                  setContractInfo({
+                    balance: "N/A",
+                    contractFeePercentage: "N/A",
+                  });
+                  setIsLoading(false);
+              };
           }
-          catch(error){
-              // Catch any errors for any of the above operations.
-              console.error(error);
-              setContractInfo({
-                balance: "N/A",
-                contractFeePercentage: "N/A",
-              });
-              setIsLoading(false);
-          };
-      };
-
-      if(instance !== undefined){
-          getInfos();
-      };
-    }, [instance, web3]);
+      })();
+    }, [web3, instance, instanceIsDeployed]);
 
 
     return (
@@ -91,7 +88,6 @@ export default function RemittanceIndex(){
             </TabPanel>
           </TabPanels>
         </Tabs>
-
       </div>
     )
 

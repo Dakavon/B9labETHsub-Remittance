@@ -5,27 +5,29 @@ import { AccountContext, InstanceContext } from "../Remittance/RemittanceContext
 
 
 export default function Stoppable(){
-    const {account}     = useContext(AccountContext);
-    const {instance}    = useContext(InstanceContext);
+    const [account]                         = useContext(AccountContext);
+    const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [state, setState] = useState("");
 
-
-    /**
-     * Functions
-     */
     async function getState(){
         let stateString;
-        const instanceState = await instance.methods.getState().call();
+        try{
+            const instanceState = await instance.methods.getState().call();
 
-        switch(instanceState){
-          case "0": stateString = "paused"; break;
-          case "1": stateString = "running"; break;
-          case "2": stateString = "destroyed"; break;
-          default: stateString = "";
+            switch(instanceState){
+                case "0": stateString = "paused"; break;
+                case "1": stateString = "running"; break;
+                case "2": stateString = "destroyed"; break;
+                default: stateString = "";
+              }
+
+              setState(stateString);
+              console.log("state: ", stateString);
         }
-        setState(stateString);
-        console.log("state: ", stateString);
+        catch(error){
+            console.log(error);
+        }
     }
 
     async function pauseContract(){
@@ -106,38 +108,57 @@ export default function Stoppable(){
         };
     };
 
-
-    /**
-     * Return
-     */
-
     return (
         <div>
             <Heading size="lg" m="5px" fontWeight="300">Stoppable</Heading>
             <Divider />
             <div className="functions">
-                <Button colorScheme="gray" variant="solid" fontWeight="300"
-                    onClick={() => getState()}>
+                {instanceIsDeployed ?
+                    <Button colorScheme="gray" variant="solid" fontWeight="300"
+                        onClick={() => getState()}>
+                        Call getState()
+                    </Button>
+                    :
+                    <Button colorScheme="gray" variant="solid" fontWeight="300" isDisabled>
                     Call getState()
-                </Button>{' '}{state !== 'undefined' && state}
+                    </Button>
+                }{' '}{state !== 'undefined' && state}
             </div>
             <div className="functions">
                 <Stack direction="row" spacing={4}>
-                    <Button colorScheme="yellow" variant="solid" fontWeight="300"
-                        onClick={() => pauseContract()}>
-                        Invoke pauseContract()
-                    </Button>
-                    <Button colorScheme="yellow" variant="solid" fontWeight="300"
-                    onClick={() => resumeContract()}>
-                    Invoke resumeContract()
-                </Button>
+                    {instanceIsDeployed ?
+                        <Button colorScheme="yellow" variant="solid" fontWeight="300"
+                            onClick={() => pauseContract()}>
+                            Invoke pauseContract()
+                        </Button>
+                        :
+                        <Button colorScheme="yellow" variant="solid" fontWeight="300" isDisabled>
+                            Invoke pauseContract()
+                        </Button>
+                    }
+                    {instanceIsDeployed ?
+                        <Button colorScheme="yellow" variant="solid" fontWeight="300"
+                            onClick={() => resumeContract()}>
+                            Invoke resumeContract()
+                        </Button>
+                        :
+                        <Button colorScheme="yellow" variant="solid" fontWeight="300" isDisabled>
+                            Invoke resumeContract()
+                        </Button>
+                    }
                 </Stack>
             </div>
             <div className="functions">
-                <Button colorScheme="red" variant="solid" fontWeight="300"
-                    onClick={() => destroyContract()}>
-                    Invoke destroyContract()
-                </Button>
+                {instanceIsDeployed ?
+                    <Button colorScheme="red" variant="solid" fontWeight="300"
+                        onClick={() => destroyContract()}>
+                        Invoke destroyContract()
+                    </Button>
+                    :
+                    <Button colorScheme="red" variant="solid" fontWeight="300" isDisabled>
+                        Invoke destroyContract()
+                    </Button>
+                }
             </div>
         </div>
     )

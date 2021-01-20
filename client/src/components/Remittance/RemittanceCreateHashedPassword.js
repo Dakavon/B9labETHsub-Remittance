@@ -1,14 +1,14 @@
 import React, { useContext, useState } from "react";
 import { Stack, FormControl, FormLabel,
   Box, Button, Input, InputGroup, InputRightElement, Textarea } from '@chakra-ui/react';
-import web3 from "web3";
 
-import { InstanceContext } from "./RemittanceContext";
+import { Web3Context, InstanceContext } from "./RemittanceContext";
 
 
 export default function RemittanceCreateHashedPassword(){
 
-    const {instance}    = useContext(InstanceContext);
+    const [web3]                            = useContext(Web3Context);
+    const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [showPassword, setShowPassword] = useState(false);
     const handleClickShowPassword = () => setShowPassword(!showPassword);
@@ -22,7 +22,6 @@ export default function RemittanceCreateHashedPassword(){
             hashedPassword: "",
         },
     });
-
 
     function createHashedPassword(_exchange, _clearPassword){
         console.log("exchange: ", _exchange);
@@ -65,8 +64,8 @@ export default function RemittanceCreateHashedPassword(){
             onChange={event => setAppVariables({
                 ...appVariables,
                 inputs: {
-                ...appVariables.inputs,
-                exchange: event.target.value,
+                    ...appVariables.inputs,
+                    exchange: event.target.value,
                 }
             })}
             />
@@ -81,8 +80,8 @@ export default function RemittanceCreateHashedPassword(){
             onChange={event => setAppVariables({
                 ...appVariables,
                 inputs:{
-                ...appVariables.inputs,
-                clearPassword: event.target.value,
+                    ...appVariables.inputs,
+                    clearPassword: event.target.value,
                 }
             })}
             />
@@ -95,10 +94,17 @@ export default function RemittanceCreateHashedPassword(){
         </FormControl>
 
         </Stack><br />
-            <Button colorScheme="gray" variant="solid" fontWeight="300" size="sm"
-            onClick={() => createHashedPassword(appVariables.inputs.exchange, appVariables.inputs.clearPassword)}>
-            Call createHashedPassword()
-            </Button>
+            {instanceIsDeployed ?
+                <Button colorScheme="gray" variant="solid" fontWeight="300" size="sm"
+                    onClick={() => createHashedPassword(appVariables.inputs.exchange, appVariables.inputs.clearPassword)}>
+                    Call createHashedPassword()
+                </Button>
+                :
+                <Button colorScheme="gray" variant="solid" fontWeight="300" size="sm" isDisabled>
+                    Call createHashedPassword()
+                </Button>
+            }
+
         </form><br />
         <Textarea isDisabled size="sm"
             placeholder="your hashed password will be shown here"

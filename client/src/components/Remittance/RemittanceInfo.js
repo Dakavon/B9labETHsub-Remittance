@@ -4,13 +4,13 @@ import { Heading, Divider, Stack, Skeleton, Box, Button,
     Accordion, AccordionButton, AccordionItem, AccordionIcon, AccordionPanel } from '@chakra-ui/react';
 import RemittanceJSON from './../../contracts/Remittance.json';
 
-import { AccountContext, InstanceContext, Web3Context } from "./RemittanceContext";
+import { Web3Context, AccountContext, InstanceContext } from "./RemittanceContext";
 
 
 export default function RemittanceInfo(){
-    const {account}     = useContext(AccountContext);
-    const {instance}    = useContext(InstanceContext);
-    const {web3}        = useContext(Web3Context);
+    const [web3]                            = useContext(Web3Context);
+    const [account]                         = useContext(AccountContext);
+    const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [isLoading, setIsLoading] = useState(true);
 
@@ -35,7 +35,7 @@ export default function RemittanceInfo(){
 
     useEffect(() => {
         (async () => {
-            if (web3 && instance) {
+            if (web3 && instanceIsDeployed) {
                 //Gather information from network
                 const networkID = await web3.eth.net.getId();
                 const contractNetwork = RemittanceJSON.networks[networkID];
@@ -50,27 +50,27 @@ export default function RemittanceInfo(){
                 });
             }
         })();
-    }, [web3, instance]);
+    }, [web3, instance, instanceIsDeployed]);
 
     useEffect(() => {
         (async () => {
-            if (web3 && instance) {
+            if (web3 && instance && instanceIsDeployed) {
                 const pastEventsDepositArray = await getPastEvents('LogFundsDeposited', instance, { origin: account }, contractInfo.contractDeployedBlock);
                 setEventDepositLogs(pastEventsDepositArray);
                 setEventsLoaded(_el => ({ ..._el, deposit: true}) );
             }
         })();
-    }, [web3, instance, account, contractInfo]);
+    }, [web3, instance, instanceIsDeployed, account, contractInfo]);
 
     useEffect(() => {
         (async () => {
-            if (web3 && instance) {
+            if (web3 && instance && instanceIsDeployed) {
                 const pastEventsWithdrawArray = await getPastEvents('LogFundsWithdrawn', instance, { receiver: account }, contractInfo.contractDeployedBlock);
                 setEventWithdrawLogs(pastEventsWithdrawArray);
                 setEventsLoaded(_el => ({ ..._el, withdraw: true }));
             }
         })();
-    }, [web3, instance, account, contractInfo])
+    }, [web3, instance, instanceIsDeployed, account, contractInfo])
 
     useEffect(() => {
         setIsLoading (! (eventsLoaded.deposit && eventsLoaded.withdraw) )

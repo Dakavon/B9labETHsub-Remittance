@@ -1,13 +1,13 @@
 import React, { useContext, useState } from "react";
 import { FormControl, FormLabel, Box, Button, Input, useToast } from '@chakra-ui/react';
-import web3 from "web3";
 
-import { AccountContext, InstanceContext } from "./RemittanceContext";
+import { Web3Context, AccountContext, InstanceContext } from "./RemittanceContext";
 
 export default function RemittanceWithdrawFunds(){
 
-    const {account}     = useContext(AccountContext);
-    const {instance}    = useContext(InstanceContext);
+    const [web3]                            = useContext(Web3Context);
+    const [account]                         = useContext(AccountContext);
+    const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [appVariables, setAppVariables] = useState({
         inputs: {
@@ -83,10 +83,16 @@ export default function RemittanceWithdrawFunds(){
             />
             </FormControl>
             <br />
-            <Button colorScheme="green" variant="solid" fontWeight="300" size="sm"
-                onClick={() => withdrawFunds(appVariables.inputs.clearPassword)}>
-                Withdraw
-            </Button>
+            {instanceIsDeployed ?
+                <Button colorScheme="green" variant="solid" fontWeight="300" size="sm"
+                    onClick={() => withdrawFunds(appVariables.inputs.clearPassword)}>
+                    Withdraw
+                </Button>
+                :
+                <Button colorScheme="green" variant="solid" fontWeight="300" size="sm" isDisabled>
+                    Withdraw
+                </Button>
+            }
         </Box>
         </div>
     )

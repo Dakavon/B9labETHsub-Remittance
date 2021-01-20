@@ -1,13 +1,13 @@
 import React, { useContext, useState } from "react";
 import { FormControl, FormLabel, Box, Button, Input, useToast } from '@chakra-ui/react';
-import web3 from "web3";
 
-import { AccountContext, InstanceContext } from "./RemittanceContext";
+import { Web3Context, AccountContext, InstanceContext } from "./RemittanceContext";
 
 export default function RemittanceReclaimFunds(){
 
-    const {account}     = useContext(AccountContext);
-    const {instance}    = useContext(InstanceContext);
+    const [web3]                            = useContext(Web3Context);
+    const [account]                         = useContext(AccountContext);
+    const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [appVariables, setAppVariables] = useState({
         inputs: {
@@ -69,34 +69,6 @@ export default function RemittanceReclaimFunds(){
         }
     }
 
-    //     try{
-    //         const returned = await instance.methods.withdrawFunds(_hexClearPassword).call({from: account});
-    //         if(returned){
-    //             await instance.methods.withdrawFunds(_hexClearPassword)
-    //             .send({
-    //                 from: account,
-    //             })
-    //             .on('transactionHash', (hash) => {
-    //                 console.log("transactionHash: ", hash);
-    //             })
-    //             .on('receipt', (receipt) => {
-    //                 console.log("receipt :", receipt);
-    //             })
-    //             .on('error', (error, receipt) => {
-    //                 console.log("receipt: ", receipt);
-    //                 console.log("error message: ", error);
-    //             });
-    //             console.log("withdraw successful");
-    //         }
-    //         else{
-    //             console.log("withdraw failed");
-    //         }
-    //     }
-    //     catch(error){
-    //         console.error(error);
-    //     }
-    // }
-
     return (
         <div className="wrapper">
         <Box w="90%" borderWidth="1px" borderRadius="sm" borderColor="red" p={3}>
@@ -114,10 +86,16 @@ export default function RemittanceReclaimFunds(){
             />
             </FormControl>
             <br />
-            <Button colorScheme="green" variant="solid" fontWeight="300" size="sm"
-                onClick={() => reclaimFunds(appVariables.inputs.hashedPassword)}>
-                Reclaim
-            </Button>
+            {instanceIsDeployed ?
+                <Button colorScheme="green" variant="solid" fontWeight="300" size="sm"
+                    onClick={() => reclaimFunds(appVariables.inputs.hashedPassword)}>
+                    Reclaim
+                </Button>
+                :
+                <Button colorScheme="green" variant="solid" fontWeight="300" size="sm" isDisabled>
+                    Reclaim
+                </Button>
+            }
         </Box>
         </div>
     )

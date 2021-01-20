@@ -1,16 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './components/App/App';
-//import 'bootstrap/dist/css/bootstrap.min.css';
-//import reportWebVitals from './reportWebVitals';
 import { ChakraProvider } from "@chakra-ui/react"
+import Navbar from './components/Navbar/Navbar';
+import App from './components/App/App';
+
+import { RemittanceContextProvider } from "./components/Remittance/RemittanceContext";
+
+const appTitle = "Remittance";
 
 ReactDOM.render(
-  <React.StrictMode>
-    <ChakraProvider>
-      <App />
-    </ChakraProvider>
-  </React.StrictMode>,
-  document.getElementById('root')
+    <React.StrictMode>
+        <ChakraProvider>
+            <RemittanceContextProvider>
+                <Navbar title={appTitle} />
+                <App />
+            </RemittanceContextProvider>
+        </ChakraProvider>
+    </React.StrictMode>,
+    document.getElementById('root')
 );

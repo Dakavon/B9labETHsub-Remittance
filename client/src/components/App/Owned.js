@@ -1,13 +1,14 @@
 import React, { useContext, useState } from "react";
 import { Heading, Divider, Button, Input } from '@chakra-ui/react';
 
-import { AccountContext, InstanceContext } from "../Remittance/RemittanceContext";
-import web3 from "web3";
+import { Web3Context, AccountContext, InstanceContext } from "../Remittance/RemittanceContext";
 
 
 export default function Owned(){
-    const {account}     = useContext(AccountContext);
-    const {instance}    = useContext(InstanceContext);
+
+    const [web3]                            = useContext(Web3Context);
+    const [account]                         = useContext(AccountContext);
+    const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [owner, setOwner] = useState(undefined);
     const [appVariables, setAppVariables] = useState({
@@ -17,10 +18,15 @@ export default function Owned(){
     });
 
     async function getOwner(){
-        const _owner = await instance.methods.getOwner().call({from: account});
-        setOwner(_owner);
+        try{
+            const _owner = await instance.methods.getOwner().call();
+            setOwner(_owner);
 
-        console.log("owner: ", _owner);
+            console.log("owner: ", _owner);
+        }
+        catch(error){
+            console.log(error);
+        }
     }
 
     async function changeOwner(_newOwner){
@@ -84,47 +90,64 @@ export default function Owned(){
         }
     }
 
-
     return(
         <div>
             <Heading size="lg" m="5px" fontWeight="300">Owned</Heading>
             <Divider />
             <div className="functions">
-                <Button colorScheme="gray" variant="solid" fontWeight="300"
-                    onClick={() => getOwner()}>
-                    Call getOwner()
-                </Button>{' '}{owner !== 'undefined' && owner}
+                {instanceIsDeployed ?
+                    <Button colorScheme="gray" variant="solid" fontWeight="300"
+                        onClick={() => getOwner()}>
+                        Call getOwner()
+                    </Button>
+                    :
+                    <Button colorScheme="gray" variant="solid" fontWeight="300" isDisabled>
+                        Call getOwner()
+                    </Button>
+                }{' '}{owner !== 'undefined' && owner}
             </div>
 
             <div className="functions">
                 <Input
-                variant="filled"
-                size="md"
-                width="250"
-                type="text"
-                placeholder="address"
-                isRequired
-                value={appVariables.inputs.newOwner}
-                onChange={event => setAppVariables({
-                ...appVariables,
-                inputs: {
-                    ...appVariables.inputs,
-                    newOwner: event.target.value,
-                }
-                })}
-                required
+                    variant="filled"
+                    size="md"
+                    width="250"
+                    type="text"
+                    placeholder="address"
+                    isRequired
+                    value={appVariables.inputs.newOwner}
+                    onChange={event => setAppVariables({
+                        ...appVariables,
+                        inputs: {
+                            ...appVariables.inputs,
+                            newOwner: event.target.value,
+                        }
+                    })}
+                    required
                 />{' '}
-                <Button colorScheme="yellow" variant="solid" fontWeight="300"
-                    onClick={() => changeOwner(appVariables.inputs.newOwner)}>
-                    Invoke changeOwner()
-                </Button>
+                {instanceIsDeployed ?
+                    <Button colorScheme="yellow" variant="solid" fontWeight="300"
+                        onClick={() => changeOwner(appVariables.inputs.newOwner)}>
+                        Invoke changeOwner()
+                    </Button>
+                    :
+                    <Button colorScheme="yellow" variant="solid" fontWeight="300" isDisabled>
+                        Invoke changeOwner()
+                    </Button>
+                }
             </div>
 
             <div className="functions">
-                <Button colorScheme="red" variant="solid" fontWeight="300"
-                    onClick={() => renounceOwnership()}>
-                    Invoke renounceOwnership()
-                </Button>
+                {instanceIsDeployed ?
+                    <Button colorScheme="red" variant="solid" fontWeight="300"
+                        onClick={() => renounceOwnership()}>
+                        Invoke renounceOwnership()
+                    </Button>
+                    :
+                    <Button colorScheme="red" variant="solid" fontWeight="300" isDisabled>
+                        Invoke renounceOwnership()
+                    </Button>
+                }
           </div>
         </div>
     )
