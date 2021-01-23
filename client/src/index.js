@@ -14,7 +14,7 @@ ReactDOM.render(
         <ChakraProvider>
             <RemittanceContextProvider>
                 <Navbar title={appTitle} />
-                <App />
+
             </RemittanceContextProvider>
         </ChakraProvider>
     </React.StrictMode>,

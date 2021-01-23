@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import PropTypes from 'prop-types';
 import { Flex, Box, Spacer, Badge, Divider } from '@chakra-ui/react';
+import { Identicon, EthAddress } from 'ethereum-react-components';
 import LogIn from './LogIn';
 import logo from "./logo.svg";
 import './Navbar.css';
@@ -9,9 +10,10 @@ import { Web3Context, AccountContext, InstanceContext } from "../Remittance/Remi
 
 export default function Navbar({title}) {
 
-    const [web3]                = useContext(Web3Context);
-    const [account]             = useContext(AccountContext);
+    const {web3}                = useContext(Web3Context);
+    const {account}             = useContext(AccountContext);
     const {instanceIsDeployed}  = useContext(InstanceContext);
+
     const [networkID, setNetworkID] = useState("N/A");
 
     useEffect(() => {
@@ -71,12 +73,16 @@ export default function Navbar({title}) {
                 {title}
             </Box>
             {instanceIsDeployed ? <Box></Box> :
-                <Box h="16" display="flex" alignItems="end">
-                    <div className="errorMessage">*contract was not deployed on this chainID</div>
+                <Box h="16" px="3" display="flex" align="center">
+                    <div className="errorMessage">*contract was not deployed<br/> on this chainID</div>
                 </Box>}
             <Spacer />
             <Box h="16" px="2" align="right">
-                Your wallet: {account ? account : "N/A"} <br />
+                    {account ?
+                        <div>Your wallet: <EthAddress short address={account} /> <Identicon address={account} size="tiny" /></div>
+                        :
+                        <div>Your wallet: N/A</div>
+                    }
                 Network: {networkID} {" "}
                     <Badge variant="subtle" fontSize="0.6em" colorScheme={networks(networkID).colour}>
                         {networks(networkID).name}

@@ -14,6 +14,9 @@ export const RemittanceContextProvider = (props) => {
     const [instance, setInstance]                       = useState(undefined);
     const [instanceIsDeployed, setInstanceIsDeployed]   = useState(false);
 
+    /**
+     * Web3
+     */
     useEffect(() => {
         async function connect2Web3(){
             window.addEventListener("load", async () => {
@@ -51,12 +54,15 @@ export const RemittanceContextProvider = (props) => {
     useEffect(() => {
         if(web3 && web3.currentProvider.isMetaMask){
             web3.currentProvider.on('chainChanged', () => {
-                console.log("Chain was changed. Reload.");
+                console.log("Chain was changed. Reloading...");
                 window.location.reload();
             });
         }
     }, [web3]);
 
+    /**
+     * Instance
+     */
     useEffect(() => {
         (async () => {
             if(web3){
@@ -82,9 +88,43 @@ export const RemittanceContextProvider = (props) => {
         })();
     }, [web3]);
 
+    /**
+     * Account
+     */
+    async function autoLogIn(){
+        if(web3){
+            try{
+                // Use web3 to get the user's accounts.
+                const accounts = await web3.eth.requestAccounts();
+                setAccount(accounts[0]);
+
+                if(web3.currentProvider.isMetaMask){
+                    web3.currentProvider.on('accountsChanged', (accounts) => {
+                        if(accounts[0]){
+                            setAccount(accounts[0]);
+                        }
+                        else{
+                            setAccount(undefined);
+                        }
+                    });
+                }
+            }
+            catch(error){
+                console.log(error);
+            }
+        }
+    }
+
+    async function autoLogOut(){
+        setAccount(undefined);
+    };
+
+    /**
+     * Provider
+     */
     return(
-        <Web3Context.Provider value={[web3, setWeb3]}>
-            <AccountContext.Provider value={[account, setAccount]}>
+        <Web3Context.Provider value={{web3}}>
+            <AccountContext.Provider value={{account, autoLogIn, autoLogOut}}>
                 <InstanceContext.Provider value={{instance, instanceIsDeployed}}>
                     {props.children}
                 </InstanceContext.Provider>
