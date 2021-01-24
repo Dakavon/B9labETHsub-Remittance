@@ -108,6 +108,7 @@ export const RemittanceContextProvider = (props) => {
                         }
                     });
                 }
+                return accounts[0];
             }
             catch(error){
                 console.log(error);

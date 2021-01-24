@@ -6,8 +6,8 @@ import { Web3Context, AccountContext, InstanceContext } from "../Remittance/Remi
 
 export default function Owned(){
 
-    const [web3]                            = useContext(Web3Context);
-    const [account]                         = useContext(AccountContext);
+    const {web3}                            = useContext(Web3Context);
+    const {account, autoLogIn}              = useContext(AccountContext);
     const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [owner, setOwner] = useState(undefined);
@@ -30,14 +30,60 @@ export default function Owned(){
     }
 
     async function changeOwner(_newOwner){
-        _newOwner = _newOwner.replace(/\s+/g, '');
-        if(web3.utils.isAddress(_newOwner)){
-            try{
-                const returned = await instance.methods.changeOwner(_newOwner).call({from: account});
+        try{
+            let _account = account;
+            if(!_account){
+                _account = await autoLogIn();
+            }
+            const _owner = await instance.methods.getOwner().call();
+            if(_account === _owner){
+                _newOwner = _newOwner.replace(/\s+/g, '');
+                if(web3.utils.isAddress(_newOwner)){
+                    const returned = await instance.methods.changeOwner(_newOwner).call({from: _account});
+                    if(returned){
+                        await instance.methods.changeOwner(_newOwner)
+                        .send({
+                            from: _account,
+                        })
+                        .on('transactionHash', (hash) => {
+                            console.log("transactionHash: ", hash);
+                        })
+                        .on('receipt', (receipt) => {
+                            console.log("receipt :", receipt);
+                        })
+                        .on('error', (error, receipt) => {
+                            console.log("receipt: ", receipt);
+                            console.log("error message: ", error);
+                        });
+                        console.log("changeOwner: Owner was changed to", _newOwner);
+                    }else{
+                        console.log("changeOwner: Owner can not be changed");
+                    }
+                }else{
+                    console.log("changeOwner: Input is not an address");
+                }
+            }else{
+                console.log("changeOwner: You are not the owner")
+            }
+        }
+        catch(error){
+            console.error(error);
+        }
+    }
+
+    async function renounceOwnership(){
+        try{
+            let _account = account;
+            if(!_account){
+                _account = await autoLogIn();
+            }
+            const _owner = await instance.methods.getOwner().call();
+            if(_account === _owner){
+                const returned = await instance.methods.renounceOwnership().call({from: _account});
                 if(returned){
-                    await instance.methods.changeOwner(_newOwner)
+                    await instance.methods.renounceOwnership()
                     .send({
-                        from: account,
+                        from: _account,
                     })
                     .on('transactionHash', (hash) => {
                         console.log("transactionHash: ", hash);
@@ -49,44 +95,13 @@ export default function Owned(){
                         console.log("receipt: ", receipt);
                         console.log("error message: ", error);
                     });
-                    console.log("owner was changed");
+                    console.log("renounceOwnership: Ownership was renounced");
                 }
-                else{
-                    console.log("owner can not be changed");
-                }
+            }else{
+                console.log("renounceOwnership: You are not the owner")
             }
-            catch(error){
-                console.error(error);
-            }
-        }
-        else{
-            console.log("input is not an address")
-        }
-    }
-
-    async function renounceOwnership(){
-        try{
-            const returned = await instance.methods.renounceOwnership().call({from: account});
-            if(returned){
-                await instance.methods.renounceOwnership()
-                .send({
-                    from: account,
-                })
-                .on('transactionHash', (hash) => {
-                    console.log("transactionHash: ", hash);
-                })
-                .on('receipt', (receipt) => {
-                    console.log("receipt :", receipt);
-                })
-                .on('error', (error, receipt) => {
-                    console.log("receipt: ", receipt);
-                    console.log("error message: ", error);
-                });
-                console.log("ownershio was renounced");
-            }
-        }
-        catch(error){
-            console.error(error.message);
+        }catch(error){
+            console.error(error);
         }
     }
 
@@ -113,6 +128,7 @@ export default function Owned(){
                     size="md"
                     width="250"
                     type="text"
+                    maxLength="42"
                     placeholder="address"
                     isRequired
                     value={appVariables.inputs.newOwner}

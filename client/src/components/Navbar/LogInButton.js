@@ -1,10 +1,9 @@
 import React, { useContext } from "react";
 import { Button } from '@chakra-ui/react';
-import { Web3Context, AccountContext } from "../Remittance/RemittanceContext";
+import { AccountContext } from "../Remittance/RemittanceContext";
 
-export default function LogIn(){
+export default function LogInButton(){
 
-    const {web3}                            = useContext(Web3Context);
     const {account, autoLogIn, autoLogOut}  = useContext(AccountContext);
 
     async function logMeIn(){
