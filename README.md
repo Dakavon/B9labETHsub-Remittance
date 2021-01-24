@@ -38,5 +38,3 @@ Small project and assisted by B9lab (https://academy.b9lab.com)
 >* did you degrade safety in the name of adding features?
 
 ![RemittanceApp_Remittance_Info_v2-0-0](https://github.com/Dakavon/B9labETHsub-Remittance/blob/main/screenshots/RemittanceApp_Remittance_Info_v2-0-0.png)
-
-![Screenshot_ProjectRemittance_Deposit](https://github.com/Dakavon/B9labETHsub-Remittance/blob/main/screenshots/RemittanceApp_Remittance_Deposit.png)
