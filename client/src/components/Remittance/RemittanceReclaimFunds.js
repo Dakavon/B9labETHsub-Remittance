@@ -3,10 +3,11 @@ import { FormControl, FormLabel, Box, Button, Input, useToast } from '@chakra-ui
 
 import { Web3Context, AccountContext, InstanceContext } from "./RemittanceContext";
 
+
 export default function RemittanceReclaimFunds(){
 
-    const [web3]                            = useContext(Web3Context);
-    const [account]                         = useContext(AccountContext);
+    const {web3}                            = useContext(Web3Context);
+    const {autoLogIn}                       = useContext(AccountContext);
     const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [appVariables, setAppVariables] = useState({
@@ -29,43 +30,44 @@ export default function RemittanceReclaimFunds(){
 
     async function reclaimFunds(_hashedPassword){
         _hashedPassword = _hashedPassword.replace(/\s+/g, '');
-
         console.log("hashedPassword: ", _hashedPassword);
 
         if(web3.utils.isHexStrict(_hashedPassword)){
             try{
-                const returned = await instance.methods.reclaimFunds(_hashedPassword).call({from: account});
-                if(returned){
-                    await instance.methods.reclaimFunds(_hashedPassword)
-                    .send({
-                        from: account,
-                    })
-                    .on('transactionHash', (hash) => {
-                        console.log("transactionHash: ", hash);
-                        addToast("info", "Transaction sent!", "Your transaction will be mined soon.", "");
-                    })
-                    .on('receipt', (receipt) => {
-                        console.log("receipt :", receipt);
-                        addToast("success", "Transaction mined!", "Your reclaim was successful.", "");
-                    })
-                    .on('error', (error, receipt) => {
-                        console.log("receipt: ", receipt);
-                        console.log("error message: ", error);
-                        addToast("error", "Error!", "Transaction failed.", "");
-                    });
-                    console.log("reclaim successful");
+                const _account = await autoLogIn();
+                if(_account){
+                    const returned = await instance.methods.reclaimFunds(_hashedPassword).call({from: _account});
+                    if(returned){
+                        await instance.methods.reclaimFunds(_hashedPassword)
+                        .send({
+                            from: _account,
+                        })
+                        .on('transactionHash', (hash) => {
+                            console.log("transactionHash: ", hash);
+                            addToast("info", "Transaction sent!", "reclaimFunds: Your transaction will be mined soon.", "");
+                        })
+                        .on('receipt', (receipt) => {
+                            console.log("receipt :", receipt);
+                            addToast("success", "Transaction mined!", "reclaimFunds: Your reclaim was successful.", "");
+                        })
+                        .on('error', (error, receipt) => {
+                            console.log("receipt: ", receipt);
+                            console.log("error message: ", error);
+                            addToast("error", "Error!", "reclaimFunds: Transaction failed.", "");
+                        });
+                        console.log("reclaimFunds: Reclaim successful");
+                    }
+                    else{
+                        console.log("reclaimFunds: Reclaim failed");
+                    }
                 }
-                else{
-                    console.log("reclaim failed");
-                }
-            }
-            catch(error){
+            }catch(error){
                 console.error(error);
-                addToast("error", "Error!", "Call failed.", "");
+                addToast("error", "Error!", "reclaimFunds: Call failed.", "");
             }
         }
         else{
-            console.log("inputs were not correct")
+            console.log("reclaimFunds: Inputs are not correct");
         }
     }
 
@@ -98,6 +100,5 @@ export default function RemittanceReclaimFunds(){
             }
         </Box>
         </div>
-    )
-
+    );
 }

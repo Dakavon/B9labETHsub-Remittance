@@ -8,6 +8,7 @@ export const Web3Context        = createContext();
 export const AccountContext     = createContext();
 export const InstanceContext    = createContext();
 
+
 export const RemittanceContextProvider = (props) => {
     const [web3, setWeb3]                               = useState(undefined);
     const [account, setAccount]                         = useState(undefined);
@@ -24,13 +25,14 @@ export const RemittanceContextProvider = (props) => {
                     if(window.ethereum){
                         // Get network provider and web3 instance.
                         const _web3 = new Web3(window.ethereum);
+                        console.log("web3: Network provider detected.");
                         setWeb3(_web3);
                     }
                     // Legacy dapp browsers...
                     else if(window.web3){
                         // Use Mist/MetaMask's provider.
                         const _web3 = window.web3;
-                        console.log("Injected web3 detected.");
+                        console.log("web3: Injected web3 detected.");
                         setWeb3(_web3);
                     }
                     // Fallback to localhost; use dev console port by default...
@@ -39,12 +41,12 @@ export const RemittanceContextProvider = (props) => {
                         "http://127.0.0.1:8545"
                         );
                         const _web3 = new Web3(provider);
-                        console.log("No web3 instance injected, using Local web3.");
+                        console.log("web3: No web3 instance injected, using Local web3.");
                         setWeb3(_web3);
                     }
                 }
                 catch(error){
-                    console.log(error);
+                    console.error(error);
                 }
             })
         };
@@ -82,8 +84,11 @@ export const RemittanceContextProvider = (props) => {
                     }
                 }
                 catch(error){
-                    console.log(error);
+                    console.error(error);
                 }
+            }
+            else{
+                setInstanceIsDeployed(false);
             }
         })();
     }, [web3]);
@@ -93,25 +98,30 @@ export const RemittanceContextProvider = (props) => {
      */
     async function autoLogIn(){
         if(web3){
-            try{
-                // Use web3 to get the user's accounts.
-                const accounts = await web3.eth.requestAccounts();
-                setAccount(accounts[0]);
+            if(!account){
+                try{
+                    // Use web3 to get the user's accounts.
+                    const accounts = await web3.eth.requestAccounts();
+                    setAccount(accounts[0]);
 
-                if(web3.currentProvider.isMetaMask){
-                    web3.currentProvider.on('accountsChanged', (accounts) => {
-                        if(accounts[0]){
-                            setAccount(accounts[0]);
-                        }
-                        else{
-                            setAccount(undefined);
-                        }
-                    });
+                    if(web3.currentProvider.isMetaMask){
+                        web3.currentProvider.on('accountsChanged', (accounts) => {
+                            if(accounts[0]){
+                                setAccount(accounts[0]);
+                            }
+                            else{
+                                setAccount(undefined);
+                            }
+                        });
+                    }
+                    return accounts[0];
                 }
-                return accounts[0];
+                catch(error){
+                    console.error(error);
+                }
             }
-            catch(error){
-                console.log(error);
+            else{
+                return account;
             }
         }
     }
@@ -120,12 +130,32 @@ export const RemittanceContextProvider = (props) => {
         setAccount(undefined);
     };
 
+    async function accountIsOwner(){
+        if(instanceIsDeployed){
+            try{
+                const _account = await autoLogIn();
+                const _owner = await instance.methods.getOwner().call();
+                console.log("_account:", _account);
+                console.log("_owner:", _owner);
+                if(_account === _owner){
+                    return _owner;
+                }
+                else{
+                    return false;
+                }
+            }
+            catch(error){
+                console.error(error);
+            }
+        }
+    }
+
     /**
      * Provider
      */
     return(
         <Web3Context.Provider value={{web3}}>
-            <AccountContext.Provider value={{account, autoLogIn, autoLogOut}}>
+            <AccountContext.Provider value={{account, autoLogIn, autoLogOut, accountIsOwner}}>
                 <InstanceContext.Provider value={{instance, instanceIsDeployed}}>
                     {props.children}
                 </InstanceContext.Provider>

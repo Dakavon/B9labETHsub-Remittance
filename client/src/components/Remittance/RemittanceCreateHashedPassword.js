@@ -7,7 +7,7 @@ import { Web3Context, InstanceContext } from "./RemittanceContext";
 
 export default function RemittanceCreateHashedPassword(){
 
-    const [web3]                            = useContext(Web3Context);
+    const {web3}                            = useContext(Web3Context);
     const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [showPassword, setShowPassword] = useState(false);
@@ -48,7 +48,7 @@ export default function RemittanceCreateHashedPassword(){
             });
         }
         else{
-            console.log("inputs were not correct");
+            console.log("createHashedPassword: Inputs are not correct");
         }
     }
 
@@ -59,7 +59,7 @@ export default function RemittanceCreateHashedPassword(){
         <Stack direction="row" spacing="5px">
         <FormControl id="exchange" isRequired>
             <FormLabel>Exchange</FormLabel>
-            <Input variant="filled" size="sm" width="250" type="text" placeholder="address" isRequired
+            <Input variant="filled" size="sm" width="250" type="text" placeholder="address" maxLength="42" isRequired
             value={appVariables.inputs.exchange}
             onChange={event => setAppVariables({
                 ...appVariables,
@@ -85,7 +85,7 @@ export default function RemittanceCreateHashedPassword(){
                 }
             })}
             />
-            <InputRightElement width="4.5rem">
+            <InputRightElement width="6rem">
             <Button h="1.5rem" size="sm" onClick={handleClickShowPassword}>
                 {showPassword ? "Hide" : "Show"}
             </Button>
@@ -112,5 +112,5 @@ export default function RemittanceCreateHashedPassword(){
             />
         </Box>
         </div>
-    )
+    );
 }

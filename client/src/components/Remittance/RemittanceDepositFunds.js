@@ -8,8 +8,8 @@ import { Web3Context, AccountContext, InstanceContext } from "./RemittanceContex
 
 export default function RemittanceDepositFunds(){
 
-    const [web3]                            = useContext(Web3Context);
-    const [account]                         = useContext(AccountContext);
+    const {web3}                            = useContext(Web3Context);
+    const {autoLogIn}                       = useContext(AccountContext);
     const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [appVariables, setAppVariables] = useState({
@@ -33,51 +33,53 @@ export default function RemittanceDepositFunds(){
     };
 
     async function depositFunds(_hashedPassword, _durationBlocks, _amount){
-        _hashedPassword = _hashedPassword.replace(/\s+/g, '');
-        _amount = _amount.replace(/\s+/g, '');
-        _amount = web3.utils.toWei(_amount, "ether");
+        try{
+            _hashedPassword = _hashedPassword.replace(/\s+/g, '');
+            _amount = _amount.replace(/\s+/g, '');
+            _amount = web3.utils.toWei(_amount, "ether");
 
-        console.log("hashedPassword: ", _hashedPassword);
-        console.log("durationBlocks: ", _durationBlocks);
-        console.log("amount: ", _amount);
+            console.log("hashedPassword: ", _hashedPassword);
+            console.log("durationBlocks: ", _durationBlocks);
+            console.log("amount: ", _amount);
+        }
+        catch(error){
+            console.error(error);
+        }
 
-        if(web3.utils.isHexStrict(_hashedPassword)){
+
+        if(web3.utils.isHexStrict(_hashedPassword) && _amount > 0){
             try{
-                const returned = await instance.methods.depositFunds(_hashedPassword, _durationBlocks).call({from: account, value: _amount});
-                if(returned){
-                    try{
+                const _account = await autoLogIn();
+                if(_account){
+                    const returned = await instance.methods.depositFunds(_hashedPassword, _durationBlocks).call({from: _account, value: _amount});
+                    if(returned){
                         await instance.methods.depositFunds(_hashedPassword, _durationBlocks)
                         .send({
-                            from: account,
+                            from: _account,
                             value: _amount,
                         })
                         .on('transactionHash', (hash) => {
                             console.log("transactionHash: ", hash);
-                            addToast("info", "Transaction sent!", "Your transaction will be mined soon.", "");
+                            addToast("info", "Transaction sent!", "depositFunds: Your transaction will be mined soon.", "");
                         })
                         .on('receipt', (receipt) => {
                             console.log("receipt :", receipt);
-                            addToast("success", "Transaction mined!", "Your deposit was successful.", "");
+                            addToast("success", "Transaction mined!", "depositFunds: Your deposit was successful.", "");
                         })
                         .on('error', (error, receipt) => {
                             console.log("receipt: ", receipt);
                             console.log("error message: ", error);
-                            addToast("error", "Error!", "Transaction failed.", "");
+                            addToast("error", "Error!", "depositFunds: Transaction failed.", "");
                         });
-                        console.log("deposit successful");
-                    }
-                    catch(error){
-                        console.error("error transaction: ", error);
+                        console.log("depositFunds: Deposit successful");
                     }
                 }
+            }catch(error){
+                console.error(error);
+                addToast("error", "Error!", "depositFunds: Call failed.", "");
             }
-            catch(error){
-                console.log("erros if: ", error);
-                addToast("error", "Error!", "Call failed.", "");
-            }
-        }
-        else{
-            console.log("inputs were not correct");
+        }else{
+            console.log("depositFunds: Inputs are not correct");
         }
     }
 

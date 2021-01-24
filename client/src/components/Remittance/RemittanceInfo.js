@@ -8,8 +8,8 @@ import { Web3Context, AccountContext, InstanceContext } from "./RemittanceContex
 
 
 export default function RemittanceInfo(){
-    const [web3]                            = useContext(Web3Context);
-    const [account]                         = useContext(AccountContext);
+    const {web3}                            = useContext(Web3Context);
+    const {account}                         = useContext(AccountContext);
     const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [isLoading, setIsLoading] = useState(true);
@@ -20,7 +20,7 @@ export default function RemittanceInfo(){
     const [eventsLoaded, setEventsLoaded] = useState({
         deposit: false,
         withdraw: false,
-    })
+    });
 
     const getPastEvents = async (eventType, instance, filter, fromBlock) => {
         return await instance.getPastEvents(
@@ -54,7 +54,7 @@ export default function RemittanceInfo(){
 
     useEffect(() => {
         (async () => {
-            if (web3 && instance && instanceIsDeployed) {
+            if (web3 && instance && instanceIsDeployed && account) {
                 const pastEventsDepositArray = await getPastEvents('LogFundsDeposited', instance, { origin: account }, contractInfo.contractDeployedBlock);
                 setEventDepositLogs(pastEventsDepositArray);
                 setEventsLoaded(_el => ({ ..._el, deposit: true}) );
@@ -64,7 +64,7 @@ export default function RemittanceInfo(){
 
     useEffect(() => {
         (async () => {
-            if (web3 && instance && instanceIsDeployed) {
+            if (web3 && instance && instanceIsDeployed && account) {
                 const pastEventsWithdrawArray = await getPastEvents('LogFundsWithdrawn', instance, { receiver: account }, contractInfo.contractDeployedBlock);
                 setEventWithdrawLogs(pastEventsWithdrawArray);
                 setEventsLoaded(_el => ({ ..._el, withdraw: true }));
@@ -104,48 +104,55 @@ export default function RemittanceInfo(){
 
     return (
         <div>
-        <Box w="100%" borderWidth="1px" borderRadius="sm" borderColor="red" p={3}>
+        <Box w="100%" borderWidth="1px" borderRadius="sm" borderColor="red" p="3">
             <Heading fontSize="md">Contract info</Heading>
             <Divider />
-            <Stack direction="row" p="10px" align="stretch" display="inline-block">
-                <Popover>
-                    <PopoverTrigger>
-                        <Button size="sm">Transaction hash</Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                        <PopoverArrow />
-                        <PopoverCloseButton />
-                        <PopoverHeader>Transaction hash</PopoverHeader>
-                        <PopoverBody>{contractInfo.contractTransactionHash}</PopoverBody>
-                    </PopoverContent>
-                </Popover>
-                <Popover>
-                    <PopoverTrigger>
-                        <Button size="sm">contractAddress</Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                        <PopoverArrow />
-                        <PopoverCloseButton />
-                        <PopoverHeader>contractAddress</PopoverHeader>
-                        <PopoverBody>{contractInfo.contractAddress}</PopoverBody>
-                    </PopoverContent>
-                </Popover>
-                <Popover>
-                    <PopoverTrigger>
-                        <Button size="sm">contractOwner</Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                        <PopoverArrow />
-                        <PopoverCloseButton />
-                        <PopoverHeader>contractOwner</PopoverHeader>
-                        <PopoverBody>{contractInfo.contractDeployer}</PopoverBody>
-                    </PopoverContent>
-                </Popover>
+            <Stack direction="row" px="5" pt="3" pb="2" align="stretch">
+                <Box>
+                    <Popover>
+                        <PopoverTrigger>
+                            <Button size="sm">Transaction hash</Button>
+                        </PopoverTrigger>
+                        <PopoverContent>
+                            <PopoverArrow />
+                            <PopoverCloseButton />
+                            <PopoverHeader>Transaction hash</PopoverHeader>
+                            <PopoverBody>{contractInfo.contractTransactionHash}</PopoverBody>
+                        </PopoverContent>
+                    </Popover>
+                </Box>
+                <Box>
+                    <Popover>
+                        <PopoverTrigger>
+                            <Button size="sm">contractAddress</Button>
+                        </PopoverTrigger>
+                        <PopoverContent>
+                            <PopoverArrow />
+                            <PopoverCloseButton />
+                            <PopoverHeader>contractAddress</PopoverHeader>
+                            <PopoverBody>{contractInfo.contractAddress}</PopoverBody>
+                        </PopoverContent>
+                    </Popover>
+                </Box>
+                <Box>
+                    <Popover>
+                        <PopoverTrigger>
+                            <Button size="sm">contractOwner</Button>
+                        </PopoverTrigger>
+                        <PopoverContent>
+                            <PopoverArrow />
+                            <PopoverCloseButton />
+                            <PopoverHeader>contractOwner</PopoverHeader>
+                            <PopoverBody>{contractInfo.contractDeployer}</PopoverBody>
+                        </PopoverContent>
+                    </Popover>
+                </Box>
             </Stack>
         </Box><br />
+
         <div className="logs">
             <Heading fontSize="md">Your deposits:</Heading>
-                {isLoading ? <Skeleton height="30px" /> :
+            {isLoading ? <Skeleton height="30px" /> :
                 (eventDepositLogs.length === 0 ? <pre> None.</pre> :
                 <Accordion allowToggle m="5px">
                     {eventDepositLogs.map((thisEvent, index) => (
@@ -194,7 +201,7 @@ export default function RemittanceInfo(){
                 ))}
                 </Accordion>
                 )}
-                </div>
         </div>
-    )
+        </div>
+    );
 }

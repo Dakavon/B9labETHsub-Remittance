@@ -7,36 +7,34 @@ import { Web3Context, AccountContext, InstanceContext } from "../Remittance/Remi
 export default function Owned(){
 
     const {web3}                            = useContext(Web3Context);
-    const {account, autoLogIn}              = useContext(AccountContext);
+    const {accountIsOwner}                  = useContext(AccountContext);
     const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
-    const [owner, setOwner] = useState(undefined);
-    const [appVariables, setAppVariables] = useState({
+    const [instanceOwner, setInstanceOwner] = useState(undefined);
+    const [appVariables, setAppVariables]   = useState({
         inputs: {
             newOwner: "",
         }
     });
 
     async function getOwner(){
-        try{
-            const _owner = await instance.methods.getOwner().call();
-            setOwner(_owner);
+        if(instanceIsDeployed){
+            try{
+                const _owner = await instance.methods.getOwner().call();
+                setInstanceOwner(_owner);
 
-            console.log("owner: ", _owner);
-        }
-        catch(error){
-            console.log(error);
+                console.log("contract owner: ", _owner);
+            }
+            catch(error){
+                console.log(error);
+            }
         }
     }
 
     async function changeOwner(_newOwner){
         try{
-            let _account = account;
-            if(!_account){
-                _account = await autoLogIn();
-            }
-            const _owner = await instance.methods.getOwner().call();
-            if(_account === _owner){
+            const _account = await accountIsOwner();
+            if(_account){
                 _newOwner = _newOwner.replace(/\s+/g, '');
                 if(web3.utils.isAddress(_newOwner)){
                     const returned = await instance.methods.changeOwner(_newOwner).call({from: _account});
@@ -73,12 +71,8 @@ export default function Owned(){
 
     async function renounceOwnership(){
         try{
-            let _account = account;
-            if(!_account){
-                _account = await autoLogIn();
-            }
-            const _owner = await instance.methods.getOwner().call();
-            if(_account === _owner){
+            const _account = await accountIsOwner();
+            if(_account){
                 const returned = await instance.methods.renounceOwnership().call({from: _account});
                 if(returned){
                     await instance.methods.renounceOwnership()
@@ -119,9 +113,8 @@ export default function Owned(){
                     <Button colorScheme="gray" variant="solid" fontWeight="300" isDisabled>
                         Call getOwner()
                     </Button>
-                }{' '}{owner !== 'undefined' && owner}
+                }{' '}{instanceOwner !== 'undefined' && instanceOwner}
             </div>
-
             <div className="functions">
                 <Input
                     variant="filled"

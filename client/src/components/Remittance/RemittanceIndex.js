@@ -11,7 +11,7 @@ import { Web3Context, InstanceContext } from "./RemittanceContext";
 
 
 export default function RemittanceIndex(){
-    const [web3]                          = useContext(Web3Context);
+    const {web3}                          = useContext(Web3Context);
     const {instance, instanceIsDeployed}  = useContext(InstanceContext);
 
     const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +23,7 @@ export default function RemittanceIndex(){
 
     useEffect(() => {
       (async () => {
-          if(web3 && instanceIsDeployed){
+          if(instanceIsDeployed){
               try{
                   const _balance = await web3.eth.getBalance(instance._address);
                   const _balanceEther = web3.utils.fromWei(_balance, "ether");
@@ -31,8 +31,8 @@ export default function RemittanceIndex(){
                   const _contractFeePercentage = await instance.methods.contractFeePercentage().call();
 
                   setContractInfo({
-                    balance: _balanceEther,
-                    contractFeePercentage: _contractFeePercentage,
+                      balance: _balanceEther,
+                      contractFeePercentage: _contractFeePercentage,
                   });
                   setIsLoading(false);
               }
@@ -40,8 +40,8 @@ export default function RemittanceIndex(){
                   // Catch any errors for any of the above operations.
                   console.error(error);
                   setContractInfo({
-                    balance: "N/A",
-                    contractFeePercentage: "N/A",
+                      balance: "N/A",
+                      contractFeePercentage: "N/A",
                   });
                   setIsLoading(false);
               };
@@ -54,6 +54,47 @@ export default function RemittanceIndex(){
       <div>
         <Heading size="lg" m="5px" fontWeight="300">Remittance</Heading>
         <Skeleton isLoaded={!isLoading}>
+            <Stack direction="row" spacing={10} align="strech">
+                <div>TVL: {contractInfo.balance} Ξ</div>
+                <div> Fee: {contractInfo.contractFeePercentage} %</div>
+            </Stack>
+        </Skeleton>
+        <Divider />
+        <Tabs isFitted>
+            <TabList>
+                <Tab>Info</Tab>
+                <Tab>Deposit</Tab>
+                <Tab>Withdraw</Tab>
+                <Tab>Reclaim</Tab>
+            </TabList>
+
+            <TabPanels>
+                <TabPanel>
+                    <RemittanceInfo />
+                </TabPanel>
+                <TabPanel>
+                    <Heading size="md" m="5px" fontWeight="300">1. Create a hashed password</Heading>
+                    <RemittanceCreateHashedPassword />
+                    <Heading size="md" m="5px" fontWeight="300">2. Deposit funds</Heading>
+                    <RemittanceDepositFunds />
+                </TabPanel>
+                <TabPanel>
+                    <Heading size="md" m="5px" fontWeight="300">Withdraw funds</Heading>
+                    <RemittanceWithdrawFunds />
+                </TabPanel>
+                <TabPanel>
+                    <Heading size="md" m="5px" fontWeight="300">Reclaim funds</Heading>
+                    <RemittanceReclaimFunds />
+                </TabPanel>
+            </TabPanels>
+        </Tabs>
+      </div>
+    );
+  }
+      /*
+      <div>
+        <Heading size="lg" m="5px" fontWeight="300">Remittance</Heading>
+        <Skeleton isLoaded={!isLoading}>
           <Stack direction="row" spacing={10} align="strech">
             <div>TVL: {contractInfo.balance} Ξ</div>
             <div> Fee: {contractInfo.contractFeePercentage} %</div>
@@ -62,33 +103,18 @@ export default function RemittanceIndex(){
         <Divider />
         <Tabs isFitted>
           <TabList>
-            <Tab>Info</Tab>
-            <Tab>Deposit</Tab>
-            <Tab>Withdraw</Tab>
-            <Tab>Reclaim</Tab>
+
+
+
+
+
           </TabList>
 
           <TabPanels>
-            <TabPanel>
-              <RemittanceInfo />
-            </TabPanel>
-            <TabPanel>
-              <Heading size="md" m="5px" fontWeight="300">1. Create a hashed password</Heading>
-              <RemittanceCreateHashedPassword />
-              <Heading size="md" m="5px" fontWeight="300">2. Deposit funds</Heading>
-              <RemittanceDepositFunds />
-            </TabPanel>
-            <TabPanel>
-              <Heading size="md" m="5px" fontWeight="300">Withdraw funds</Heading>
-              <RemittanceWithdrawFunds />
-            </TabPanel>
-            <TabPanel>
-              <Heading size="md" m="5px" fontWeight="300">Reclaim funds</Heading>
-              <RemittanceReclaimFunds />
-            </TabPanel>
+
+
+
           </TabPanels>
         </Tabs>
       </div>
-    )
-
-}
+    */
