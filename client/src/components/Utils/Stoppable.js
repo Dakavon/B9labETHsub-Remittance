@@ -5,39 +5,37 @@ import { AccountContext, InstanceContext } from "../Remittance/RemittanceContext
 
 
 export default function Stoppable(){
-    const {account, autoLogIn}              = useContext(AccountContext);
+    const {accountIsOwner}                  = useContext(AccountContext);
     const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [state, setState] = useState("");
 
     async function getState(){
-        let stateString;
-        try{
-            const instanceState = await instance.methods.getState().call();
+        if(instanceIsDeployed){
+            let stateString;
+            try{
+                const instanceState = await instance.methods.getState().call();
 
-            switch(instanceState){
-                case "0": stateString = "paused"; break;
-                case "1": stateString = "running"; break;
-                case "2": stateString = "destroyed"; break;
-                default: stateString = "";
+                switch(instanceState){
+                    case "0": stateString = "paused"; break;
+                    case "1": stateString = "running"; break;
+                    case "2": stateString = "destroyed"; break;
+                    default: stateString = "";
+                }
+
+                setState(stateString);
+                console.log("contract state: ", stateString);
             }
-
-            setState(stateString);
-            console.log("state: ", stateString);
-        }
-        catch(error){
-            console.error(error);
+            catch(error){
+                console.error(error);
+            }
         }
     }
 
     async function pauseContract(){
         try{
-            let _account = account;
-            if(!_account){
-                _account = await autoLogIn();
-            }
-            const _owner = await instance.methods.getOwner().call();
-            if(_account === _owner){
+            const _account = await accountIsOwner();
+            if(_account){
                 const returned = await instance.methods.pauseContract().call({from: _account});
                 if(returned){
                     await instance.methods.pauseContract()
@@ -69,12 +67,8 @@ export default function Stoppable(){
 
     async function resumeContract(){
         try{
-            let _account = account;
-            if(!_account){
-                _account = await autoLogIn();
-            }
-            const _owner = await instance.methods.getOwner().call();
-            if(_account === _owner){
+            const _account = await accountIsOwner();
+            if(_account){
                 const returned = await instance.methods.resumeContract().call({from: _account});
                 if(returned){
                     await instance.methods.resumeContract()
@@ -105,12 +99,8 @@ export default function Stoppable(){
 
     async function destroyContract(){
         try{
-            let _account = account;
-            if(!_account){
-                _account = await autoLogIn();
-            }
-            const _owner = await instance.methods.getOwner().call();
-            if(_account === _owner){
+            const _account = await accountIsOwner();
+            if(_account){
                 const returned = await instance.methods.destroyContract().call({from: _account});
                 if(returned){
                     await instance.methods.destroyContract()

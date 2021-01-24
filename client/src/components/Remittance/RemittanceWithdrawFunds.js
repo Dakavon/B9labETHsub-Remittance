@@ -5,8 +5,8 @@ import { Web3Context, AccountContext, InstanceContext } from "./RemittanceContex
 
 export default function RemittanceWithdrawFunds(){
 
-    const [web3]                            = useContext(Web3Context);
-    const [account]                         = useContext(AccountContext);
+    const {web3}                            = useContext(Web3Context);
+    const {autoLogIn}                       = useContext(AccountContext);
     const {instance, instanceIsDeployed}    = useContext(InstanceContext);
 
     const [appVariables, setAppVariables] = useState({
@@ -35,34 +35,37 @@ export default function RemittanceWithdrawFunds(){
         console.log("hexClearPassword: ", _hexClearPassword);
 
         try{
-            const returned = await instance.methods.withdrawFunds(_hexClearPassword).call({from: account});
-            if(returned){
-                await instance.methods.withdrawFunds(_hexClearPassword)
-                .send({
-                    from: account,
-                })
-                .on('transactionHash', (hash) => {
-                    console.log("transactionHash: ", hash);
-                    addToast("info", "Transaction sent!", "Your transaction will be mined soon.", "");
-                })
-                .on('receipt', (receipt) => {
-                    console.log("receipt :", receipt);
-                    addToast("success", "Transaction mined!", "Your withdrawal was successful.", "");
-                })
-                .on('error', (error, receipt) => {
-                    console.log("receipt: ", receipt);
-                    console.log("error message: ", error);
-                    addToast("error", "Error!", "Transaction failed.", "");
-                });
-                console.log("withdraw successful");
-            }
-            else{
-                console.log("withdraw failed");
+            const _account = await autoLogIn();
+            if(_account){
+                const returned = await instance.methods.withdrawFunds(_hexClearPassword).call({from: _account});
+                if(returned){
+                    await instance.methods.withdrawFunds(_hexClearPassword)
+                    .send({
+                        from: _account,
+                    })
+                    .on('transactionHash', (hash) => {
+                        console.log("transactionHash: ", hash);
+                        addToast("info", "Transaction sent!", "withdrawFunds: Your transaction will be mined soon.", "");
+                    })
+                    .on('receipt', (receipt) => {
+                        console.log("receipt :", receipt);
+                        addToast("success", "Transaction mined!", "withdrawFunds: Your withdrawal was successful.", "");
+                    })
+                    .on('error', (error, receipt) => {
+                        console.log("receipt: ", receipt);
+                        console.log("error message: ", error);
+                        addToast("error", "Error!", "withdrawFunds: Transaction failed.", "");
+                    });
+                    console.log("withdrawFunds: Withdraw successful");
+                }
+                else{
+                    console.log("withdrawFunds: Withdraw failed");
+                }
             }
         }
         catch(error){
             console.error(error);
-            addToast("error", "Error!", "Call failed.", "");
+            addToast("error", "Error!", "withdrawFunds: Call failed.", "");
         }
     }
 
