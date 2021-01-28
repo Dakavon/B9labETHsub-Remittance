@@ -1,6 +1,6 @@
 {
   "name": "b9lab_ethsub-project2-remittance",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Small project and assisted by https://academy.b9lab.com",
   "private": true,
   "main": "truffle-config.js",

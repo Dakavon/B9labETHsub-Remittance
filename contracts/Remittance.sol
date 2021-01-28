@@ -3,7 +3,7 @@
 //B9lab ETH-SUB Ethereum Developer Subscription Course
 //>>> Remittance <<<
 //
-//Last update: 03.12.2020
+//Last update: 28.01.2021
 
 pragma solidity 0.6.12;
 
@@ -137,8 +137,6 @@ contract Remittance is Stoppable{
      * @param clearPassword Clear password that was kept secret
      */
     function withdrawFunds(bytes32 clearPassword) public onlyIfRunning returns(bool success){
-        require(clearPassword != "", "clearPassword must be provided");
-
         bytes32 hashedPassword = createHashedPassword(msg.sender, clearPassword);
 
         uint amount = remittanceStructs[hashedPassword].amount;
