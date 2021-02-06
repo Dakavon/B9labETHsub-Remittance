@@ -3,7 +3,7 @@
 //B9lab ETH-SUB Ethereum Developer Subscription Course
 //>>> Remittance <<<
 //
-//Last update: 28.01.2021
+//Last update: 06.02.2021
 
 pragma solidity 0.6.12;
 
@@ -196,7 +196,7 @@ contract Remittance is Stoppable{
      */
     function renounceOwnership() public override onlyOwner returns(bool success){
         require(contractFeePercentage == 0, "contractFeePercentage was not set to 0");
-        require(contractCollectedFees[getOwner()] == 0, "contractCollectedFees were not withdrawn");
+        require(contractCollectedFees[msg.sender] == 0, "contractCollectedFees were not withdrawn");
 
         return Owned.renounceOwnership();
     }

@@ -349,6 +349,43 @@ contract("Remittance", async (accounts) => {
                 "Remittance must be unique"
             );
         });
+
+        it("should still be possible to deposit small amounts (and are not eaten up by fees)", async () =>{
+            const smallDepositValue = 9;
+            const newFeePercentage = 20;
+
+            const clearPasswordTest = "newPasswordDummy";
+            const hexClearPasswordTest = web3.utils.asciiToHex(clearPasswordTest);
+            newHashedPassword = await instance.createHashedPassword(exchange, hexClearPasswordTest, {from: sender});
+
+            await instance.changeContractFeePercentage(newFeePercentage, {from: owner});
+            const contractFeePercentage = await instance.contractFeePercentage({from: sender});
+
+            const returned = await instance.depositFunds.call(newHashedPassword, durationBlocks, {from: sender, value: smallDepositValue});
+            assert.strictEqual(returned, true, "sender was unable to deposit funds");
+
+            const txObj = await instance.depositFunds(newHashedPassword, durationBlocks, {from: sender, value: smallDepositValue});
+            truffleAssert.eventEmitted(txObj, "LogFundsDeposited");
+
+            const expectedFee = toBN(smallDepositValue).mul(toBN(contractFeePercentage)).div(toBN(100));
+            const expectedAmount = toBN(smallDepositValue).sub(toBN(expectedFee));
+
+            const logAmount = txObj.receipt.logs[0].args.amount;
+            const logFee = txObj.receipt.logs[0].args.fee;
+            assert.strictEqual(logAmount.toString(10), expectedAmount.toString(10), "amount was not logged correctly");
+            assert.strictEqual(logFee.toString(10), expectedFee.toString(10), "fee was not logged correctly");
+
+            // console.log("logAmount:", logAmount.toString(10));
+            // console.log("logFee:", logFee.toString(10));
+
+            const remittanceStruct = await instance.remittanceStructs(newHashedPassword);
+            assert.strictEqual(remittanceStruct.amount.toString(10), expectedAmount.toString(10), "amount was not stored correctly");
+            // console.log("remittanceStruct.amount:", remittanceStruct.amount.toString(10));
+
+            const contractCollectedFees = await instance.contractCollectedFees(owner, {from: sender});
+            assert.strictEqual(contractCollectedFees.toString(10), expectedFee.toString(10), "contracts fee balance is not correct");
+            // console.log("contractCollectedFees:", contractCollectedFees.toString(10));
+        });
     });
 
 
